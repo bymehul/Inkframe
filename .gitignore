@@ -1,0 +1,15 @@
+# Binaries
+inkframe
+
+# Odin temporary files
+*.o
+*.obj
+*.pdb
+*.bin
+
+# Build artifacts
+bin/
+
+# OS files
+.DS_Store
+Thumbs.db
