@@ -1,7 +1,7 @@
 # Binaries
 vnefall*
 vnefall
-
+*.sthiti
 # Odin temporary files
 *.o
 *.obj
