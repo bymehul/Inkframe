@@ -1,21 +1,24 @@
-# `bg` command (Vnefall)
+# Command: `bg`
 
-The `bg` command changes the fullscreen background image.
+Changes the current background image of the scene.
 
-## Syntax
-```bash
-bg <image_file>
+## Usage
+```vnef
+bg <filename>
 ```
 
-- **image_file**: The filename of the image located in `assets/images/`.
+## Parameters
+- `<filename>`: The name of the image file (including extension) located in the images directory.
+  - Default directory: `assets/images/`
 
 ## Example
-```bash
+```vnef
 bg room.png
-bg forest.jpg
+say Alice "Welcome to my room!"
+bg night.jpg
+say Alice "It's getting late."
 ```
 
-## Behavior
-- Immediately clears the previous background and draws the new one.
-- Supports common formats like PNG, JPG, and BMP.
-- The engine expects images to be in the `assets/images/` directory.
+## Notes
+- Images are scaled to fit the design resolution automatically.
+- Supported formats: `.png`, `.jpg`, `.bmp`.

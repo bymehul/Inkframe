@@ -1,5 +1,5 @@
 /*
-    Inkframe — A simple VN engine.
+    vnefall — A simple VN engine.
     
     This is the main entry point where we glue everything together. 
     It handles the lifecycle: init, the loop, and cleaning up.
@@ -10,8 +10,20 @@ package vnefall
 import "core:fmt"
 import "core:os"
 import "core:strings"
+import "core:mem"
 
-VERSION :: "1.0.0"
+VERSION :: "1.1.0"
+
+Choice_Option :: struct {
+    text:  string,
+    label: string,
+}
+
+Choice_State :: struct {
+    active:  bool,
+    options: [dynamic]Choice_Option,
+    selected: int,
+}
 
 // State of the whole game world
 Game_State :: struct {
@@ -24,6 +36,7 @@ Game_State :: struct {
     
     current_bg:   u32,           // OpenGL texture handle
     textbox:      Textbox_State,
+    choice:       Choice_State,
 }
 
 Textbox_State :: struct {
@@ -36,14 +49,38 @@ Textbox_State :: struct {
 g: Game_State
 
 main :: proc() {
-    // Check if we passed a script path, otherwise fallback to demo
+    // Setup tracking allocator to detect leaks
+    track: mem.Tracking_Allocator
+    mem.tracking_allocator_init(&track, context.allocator)
+    context.allocator = mem.tracking_allocator(&track)
+    
+    defer {
+        if len(track.allocation_map) > 0 {
+            fmt.eprintf("=== %v allocations not freed: ===\n", len(track.allocation_map))
+            for _, entry in track.allocation_map {
+                fmt.eprintf("- %v bytes @ %v\n", entry.size, entry.location)
+            }
+        }
+        if len(track.bad_free_array) > 0 {
+            fmt.eprintf("=== %v bad frees detected: ===\n", len(track.bad_free_array))
+            for entry in track.bad_free_array {
+                fmt.eprintf("- %v @ %v\n", entry.memory, entry.location)
+            }
+        }
+        mem.tracking_allocator_destroy(&track)
+    }
+
+    // Load config first so we know where everything is
+    config_load("config.vnef")
+    
+    // Check if we passed a script path, otherwise fallback to config entry
     args := os.args
-    script_path := "assets/scripts/demo.vnef"
+    script_path := cfg.entry_script
     
     if len(args) >= 2 {
         script_path = args[1]
     } else {
-        fmt.println("[inkframe] using default script:", script_path)
+        fmt.println("[vnefall] using default script:", script_path)
     }
     
     // Kick things off
@@ -57,7 +94,58 @@ main :: proc() {
     for g.running {
         input_poll(&g.input, &g.running)
         
-        if g.input.advance_pressed {
+        if g.choice.active {
+            // Translate mouse to virtual coordinates
+            mx := f32(g.input.mouse_x) * (cfg.design_width / f32(g.window.width))
+            my := f32(g.input.mouse_y) * (cfg.design_height / f32(g.window.height))
+            
+            // Re-calculate button layout (same as in renderer)
+            count := len(g.choice.options)
+            button_w := cfg.choice_w
+            button_h := cfg.choice_h
+            spacing  := cfg.choice_spacing
+            total_h  := f32(count) * button_h + f32(count - 1) * spacing
+            start_y  := (cfg.design_height - total_h) / 2
+            bx       := (cfg.design_width - button_w) / 2
+            
+            // Check mouse hover
+            for i in 0..<count {
+                by := start_y + f32(i) * (button_h + spacing)
+                if mx >= bx && mx <= bx + button_w && my >= by && my <= by + button_h {
+                    g.choice.selected = i
+                    break
+                }
+            }
+
+            if g.input.up_pressed {
+                g.choice.selected = max(0, g.choice.selected - 1)
+            }
+            if g.input.down_pressed {
+                g.choice.selected = min(len(g.choice.options) - 1, g.choice.selected + 1)
+            }
+            
+            if g.input.number_pressed > 0 && g.input.number_pressed <= count {
+                g.choice.selected = g.input.number_pressed - 1
+                g.input.select_pressed = true
+            }
+            if g.input.select_pressed {
+                choice := g.choice.options[g.choice.selected]
+                target_label := strings.clone(choice.label)
+                defer delete(target_label)
+                
+                choice_clear(&g)
+                g.choice.active = false
+                
+                if target, ok := g.script.labels[target_label]; ok {
+                    g.script.ip = target
+                    g.script.waiting = false
+                    g.textbox.visible = false
+                } else {
+                    fmt.eprintln("Error: Choice refers to non-existent label:", target_label)
+                    g.script.waiting = false
+                }
+            }
+        } else if g.input.advance_pressed {
             script_advance(&g.script, &g)
         }
         
@@ -76,6 +164,10 @@ main :: proc() {
             renderer_draw_textbox(&g.renderer, g.textbox.speaker, g.textbox.text)
         }
         
+        if g.choice.active {
+            renderer_draw_choice_menu(&g.renderer, g.choice.options, g.choice.selected)
+        }
+        
         renderer_end(&g.renderer, &g.window)
     }
     
@@ -86,7 +178,9 @@ init_game :: proc(script_path: string) -> bool {
     fmt.printf("[vnefall] Starting up v%s...\n", VERSION)
     
     // Need a window first
-    if !window_create(&g.window, "Vnefall", 1280, 720) do return false
+    title_cstr := strings.clone_to_cstring(cfg.window_title)
+    defer delete(title_cstr)
+    if !window_create(&g.window, title_cstr, cfg.window_width, cfg.window_height) do return false
     
     // Setup GL state
     if !renderer_init(&g.renderer) do return false
@@ -97,7 +191,9 @@ init_game :: proc(script_path: string) -> bool {
     }
     
     // Try to get our default font
-    if !font_load("assets/fonts/default.ttf") {
+    font_path := strings.concatenate({cfg.path_assets, "fonts/default.ttf"})
+    defer delete(font_path)
+    if !font_load(font_path) {
         fmt.eprintln("Warning: Could not load default font.")
     }
     
@@ -107,12 +203,22 @@ init_game :: proc(script_path: string) -> bool {
         return false
     }
     
+    // Initialize scene system
+    scene_init()
+    g_scenes.current = scene_load_sync(script_path)
+    
     g.running = true
     return true
 }
 
 cleanup_game :: proc() {
+    choice_clear(&g)
+    delete(g.choice.options)
+    delete(g.textbox.text)
+    script_destroy(&g.script)
+    scene_system_cleanup()
     audio_cleanup(&g.audio)
     renderer_cleanup(&g.renderer)
     window_destroy(&g.window)
+    config_cleanup()
 }

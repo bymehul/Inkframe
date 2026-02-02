@@ -1,0 +1,47 @@
+# Vnefall - The Quiet Commute (Chapter 1)
+# A showcase of Vnefall v1.1.0 using high-quality assets
+
+title "The Quiet Commute - Chapter 1"
+bg train.png
+music hope.mp3
+
+say Narrator "The rhythmic clacking of the train against the tracks is the only sound in the carriage."
+say Narrator "Outside, the Japanese countryside blurs into a palette of green and blue."
+
+say Alice "Another long day at the university..."
+say Alice "I hope I didn't forget my books in the library."
+
+set knows_alice = true
+set study_points = 10
+
+say Alice "Wait, is that someone I know sitting over there?"
+
+choice_add "Wave hello" wave_hello
+choice_add "Stay quiet and read" stay_quiet
+choice_show
+
+label wave_hello:
+    say Alice "Hey! Over here!"
+    say Narrator "The person looks up and smiles. It's a friend from your math class."
+    set study_points = 15
+    jump continue_story
+
+label stay_quiet:
+    say Narrator "You decide to keep your head down and focus on your textbook."
+    say Alice "Calculus won't study itself."
+    set study_points = 20
+
+label continue_story:
+    music frozen.mp3
+    bg apartment.png
+    say Narrator "Later that evening, you arrive at your apartment complex."
+    say Alice "Home at last. It's been a productive day."
+    
+    say Alice "I have ${study_points} study points saved up."
+    
+    # Prefetch the next chapter
+    scene_next "demo_ch2"
+    
+    say Alice "I should get some sleep. Tomorrow is a big day."
+    
+    jump_file "demo_ch2.vnef"

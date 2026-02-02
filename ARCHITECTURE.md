@@ -18,14 +18,25 @@ If you want to add a command like `shake_screen` or `show_character`:
    - Update `parse_line` to recognize the command in a text file.
    - Update `script_execute` to handle what the command actually does (e.g., setting a flag).
 
-2. **`src/main.odin`**:
+2. **`src/config.odin`**:
+   - If the command needs a new path or global setting, add it to the `Config` struct.
+
+3. **`src/main.odin`**:
    - If the command needs to change something on screen (like a shake), add a field to `Game_State`.
    - Update the drawing logic in the main loop to react to that state.
 
 ## Systems
+- **Virtual Resolution**: The engine uses a "design resolution" for coordinate math (e.g. 1280x720). This is automatically scaled to the actual window size using a fixed orthographic projection.
+- **Config-Driven**: Almost all engine constants (resolution, colors, paths) are loaded from `config.vnef` at runtime.
+- **Branching Logic**: Scripts support labels, jumps, and player choices. A pre-processing step builds a label-to-index map for instant navigation.
 - **Renderer (`renderer.odin`)**: Uses a single shader and a single buffer. We draw everything as textured quads (2 triangles, 6 vertices).
 - **Text (`font.odin`)**: Uses `stb_truetype` to bake a font into a single atlas texture.
 - **Audio (`audio.odin`)**: A thin wrapper around `SDL_mixer`.
+- **Scene System (`scene.odin`, `manifest.odin`)**: Manages asset loading per-scene. Automatically generates manifests and supports background prefetching for zero-stutter transitions.
+
+## Graphics API Strategy
+We use **OpenGL 3.3** for its high compatibility and simplicity. While Apple has deprecated OpenGL, it remains the most portable "starter" API for 2D engines.
+- **Future-Proofing**: The engine is designed with a separate `renderer.odin`. If OpenGL is ever removed from a major platform, we can implement a `wgpu` or `sokol_gfx` backend without touching the `script.odin` or `main.odin` logic.
 
 ## Folder Structure
 - `src/`: All Odin source code.
@@ -42,7 +53,39 @@ If you want to add a command like `shake_screen` or `show_character`:
 ## Known Constraints
 - **VBO Size**: The current VBO is sized for a single quad (6 vertices). If you plan to draw many sprites at once, you'll need to update `renderer_init` to handle a larger buffer or implement batching.
 - **Script Buffer**: We read the entire `.vnef` file into memory. For massive stories, we might eventually need a streaming parser.
+- **In-Memory State**: Variables persist across `jump_file` calls for multi-chapter state. Full disk-based saving is planned for the Database system.
 
 ## Troubleshooting
 - **No Sound**: Ensure `SDL2_mixer` is installed and the file path starts with `assets/music/`.
 - **Corrupted Textures**: OpenGL needs correct pixel alignment. We use `gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)` to handle non-power-of-two widths.
+
+## V1.1.0+ Features
+
+### The Choice System ("add -> show")
+Vnefall uses a "staged" choice system to allow dynamic menus:
+1.  **Stage**: `choice_add` clones strings into a `[dynamic]Choice_Option` list in `Game_State`.
+2.  **Display**: `choice_show` sets `active = true` and pauses the script.
+3.  **Clean**: Once selected, `choice_clear` is called to free the strings and clear the list.
+
+### Variable Interpolation
+Dialogue and choices are scanned for `${var_name}`. The engine looks up the integer value in the `variables` map and replaces it using a string builder at runtime. These strings are treated as transient and are freed immediately after use or when the textbox advances.
+
+### Multi-File Support
+Scripts can jump to other `.vnef` files using `jump_file "other.vnef"`. Variables are preserved when jumping to a new file to allow for persistent story state. The `script_cleanup()` procedure clears commands but keeps containers and variables for reuse, while `script_destroy()` frees everything at game exit.
+
+### Scene-Based Asset Loading
+For large games, the engine uses a scene system:
+- **Manifests**: Auto-generated lists of assets per script file.
+- **Prefetching**: `scene_next` loads next chapter's assets in background.
+- **Per-Scene Memory**: Each scene owns its textures, freed on switch.
+
+### Memory Management (Manual)
+Odin requires manual memory management. See [docs/memory.md](docs/memory.md) for the full model.
+
+**Quick Summary**:
+- **Global Caches**: Textures, fonts, config. Freed at shutdown.
+- **Script State**: Commands, labels, variables. Freed when game ends.
+- **Scene State**: Per-chapter assets. Freed when switching scenes.
+- **Transient Strings**: Dialogue text, choices. Freed immediately after use.
+
+A **Tracking Allocator** is active by default. If any memory is leaked, it will be printed to the console on exit.

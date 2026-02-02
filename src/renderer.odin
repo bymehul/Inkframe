@@ -101,15 +101,15 @@ renderer_cleanup :: proc(r: ^Renderer) {
 }
 
 renderer_begin :: proc(r: ^Renderer, w: ^Window) {
-    r.width  = f32(w.width)
-    r.height = f32(w.height)
+    r.width  = cfg.design_width
+    r.height = cfg.design_height
     
     gl.Viewport(0, 0, w.width, w.height)
     gl.ClearColor(0.05, 0.05, 0.08, 1.0)
     gl.Clear(gl.COLOR_BUFFER_BIT)
     
     gl.UseProgram(r.shader)
-    proj := ortho_matrix(0, r.width, r.height, 0)
+    proj := ortho_matrix(0, cfg.design_width, cfg.design_height, 0)
     gl.UniformMatrix4fv(r.u_proj, 1, false, &proj[0, 0])
 }
 
@@ -166,9 +166,9 @@ renderer_draw_rect :: proc(r: ^Renderer, x, y, w, h: f32, color: [4]f32) {
 }
 
 renderer_draw_textbox :: proc(r: ^Renderer, speaker, text: string) {
-    h  := f32(180)
-    m  := f32(40)
-    p  := f32(20)
+    h  := cfg.textbox_height
+    m  := cfg.textbox_margin
+    p  := cfg.textbox_padding
     bx := m
     by := r.height - h - m
     bw := r.width - (m * 2)
@@ -180,16 +180,50 @@ renderer_draw_textbox :: proc(r: ^Renderer, speaker, text: string) {
     ty := by + p + FONT_SIZE
     
     if len(speaker) > 0 {
-        renderer_draw_text(r, speaker, tx, ty, {0.8, 0.6, 0.2, 1.0})
+        renderer_draw_text(r, speaker, tx, ty, cfg.color_speaker)
         ty += FONT_SIZE + 8
     }
     
     lines := font_wrap_text(text, bw - (p * 2))
-    defer delete(lines)
-    
     for line in lines {
-        renderer_draw_text(r, line, tx, ty, {0.9, 0.9, 0.95, 1.0})
+        renderer_draw_text(r, line, tx, ty, cfg.color_text)
         ty += FONT_SIZE + 4
+        delete(line)
+    }
+    delete(lines)
+}
+
+renderer_draw_choice_menu :: proc(r: ^Renderer, options: [dynamic]Choice_Option, selected: int) {
+    count := len(options)
+    if count == 0 do return
+    
+    button_w := cfg.choice_w
+    button_h := cfg.choice_h
+    spacing  := cfg.choice_spacing
+    
+    total_h := f32(count) * button_h + f32(count - 1) * spacing
+    start_y := (r.height - total_h) / 2
+    x       := (r.width - button_w) / 2
+    
+    for opt, i in options {
+        y := start_y + f32(i) * (button_h + spacing)
+        
+        bg_color   := cfg.choice_color_idle
+        text_color := cfg.choice_text_idle
+        
+        if i == selected {
+            bg_color   = cfg.choice_color_hov
+            text_color = cfg.choice_text_hov
+        }
+        
+        renderer_draw_rect(r, x, y, button_w, button_h, bg_color)
+        
+        // Center text in button
+        text_w := font_text_width(opt.text)
+        tx := x + (button_w - text_w) / 2
+        ty := y + (button_h + FONT_SIZE) / 2 - 4
+        
+        renderer_draw_text(r, opt.text, tx, ty, text_color)
     }
 }
 

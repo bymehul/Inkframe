@@ -1,20 +1,21 @@
-# `title` command (Vnefall)
+# Command: `title`
 
-The `title` command updates the text shown in the window's title bar.
+Changes the title of the game window at runtime.
 
-## Syntax
-```bash
-title "<new_title>"
+## Usage
+```vnef
+title "<text>"
 ```
 
-- **new_title**: The text you want to show on the window border. Quotes are optional but recommended for titles with spaces.
+## Parameters
+- `"<text>"`: The new window title text. Quotes are optional but recommended for multiple words.
 
 ## Example
-```bash
-title "Inkframe Demo"
-title "Chapter 1: The Awakening"
+```vnef
+title "Chapter 1: The Beginning"
+say Alice "Where am I?"
 ```
 
-## Behavior
-- Updates the OS window title immediately.
-- Great for indicating game progress or changing the game's name dynamically.
+## Notes
+- This overrules the `window_title` set in `config.vnef`.
+- Useful for indicating story progress or location.

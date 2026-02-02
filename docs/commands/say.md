@@ -1,21 +1,29 @@
-# `say` command (Vnefall)
+# Command: `say`
 
-The `say` command displays dialogue text on the screen.
+Displays dialogue on the screen with an optional speaker name.
 
-## Syntax
-```bash
-say <speaker_name> "<dialogue_text>"
+## Usage
+```vnef
+say <speaker> "<text>"
 ```
 
-- **speaker_name**: The name of the character currently speaking. This will appear above the text box.
-- **dialogue_text**: The actual text the character says. This **must** be enclosed in double quotes.
+## Parameters
+- `<speaker>`: The name of the character speaking. If empty, the textbox will only show the dialogue.
+- `"<text>"`: The dialogue text, wrapped in double quotes.
+
+## Variable Interpolation
+You can include variables in the dialogue using the `${var}` syntax.
+```vnef
+set gold = 100
+say Alice "You have ${gold} gold pieces."
+```
 
 ## Example
-```bash
-say Alice "Hello! I'm Alice."
-say Narrator "She greeted the player with a smile."
+```vnef
+say Alice "Hello there!"
+say "..." # Narrator style
 ```
 
-## Behavior
-- Automatically wraps text if it's too long for the box.
-- Changes the window state to "waiting" until the user clicks or presses space/enter.
+## Notes
+- Text automatically wraps based on the `textbox_padding` and `textbox_margin` in `config.vnef`.
+- The speaker name is styled using `color_speaker` from the configuration.

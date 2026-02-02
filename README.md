@@ -4,13 +4,20 @@ Vnefall is a simple, no-nonsense visual novel engine. It's built in Odin using S
 
 ![Vnefall Demo](demo_vnefall.gif)
 
+## Features
+- **Branching Dialogue**: Full support for labels, jumps, and player choices.
+- **Configuration System**: Portable `config.vnef` file for resolution, colors, and paths.
+- **Virtual Resolution**: Design once, it scales automatically to any screen.
+- **Simple Syntax**: Commands like `say`, `bg`, `choice`, `set`, and `if`.
+- **Audio Support**: Background music with looping support.
+
 ## How to get started
 
 ### Just want to run it? (Linux)
-If you're on Linux, just grab the `vnefall-linux-x64` binary from the [Releases](https://github.com/bymehul/vnefall/releases) page. Run it like this:
+If you're on Linux, grab the `vnefall` binary from the [Releases](https://github.com/bymehul/vnefall/releases) page. Run the new high-quality demo:
 ```bash
-chmod +x vnefall-linux-x64
-./vnefall-linux-x64 assets/scripts/demo.vnef
+chmod +x vnefall
+./vnefall assets/scripts/demo_game.vnef
 ```
 
 ### Want to build from source?
@@ -20,9 +27,12 @@ You'll need the [Odin Compiler](https://odin-lang.org/) and SDL2 libraries.
 
 **Linux (Ubuntu/Debian):**
 ```bash
-sudo apt install libsdl2-dev libsdl2-mixer-dev
+# Install dependencies
+sudo apt install libsdl2-dev libsdl2-mixer-dev libsdl2-ttf-dev
+
+# Build (v1.1.0)
 ./build.sh
-./vnefall assets/scripts/demo.vnef
+./vnefall assets/scripts/demo_game.vnef
 ```
 
 **Windows:**
@@ -46,16 +56,25 @@ Scripts are just simple text files ending in `.vnef`. You can change backgrounds
 See the [detailed command guide](docs/commands/) for all available commands.
 
 Here's what a script looks like:
-```bash
-title "A Human Story"
+```vnef
 bg room.png
-music bgm.mp3
+say Alice "Welcome to the new Vnefall!"
 
-say Alice "I can't believe it's actually working."
-say Narrator "She smiled at the screen."
+choice_add "Go to the Night" see_night
+choice_add "Stay in Day" stay_day
+choice_show
 
-wait
-end
+label see_night:
+    bg night.png
+    say Alice "The night is cool."
+    jump end_story
+
+label stay_day:
+    say Alice "Sunlight is nice too."
+
+label end_story:
+    say Alice "Thanks for playing!"
+    end
 ```
 
 ## Controls

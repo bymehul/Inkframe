@@ -1,22 +1,23 @@
-# `music` command (Vnefall)
+# Command: `music` / `play`
 
-The `music` command starts playing a background music track. It can also be called using `play`.
+Plays background music or sound effects.
 
-## Syntax
-```bash
-music <audio_file>
-play <audio_file>
+## Usage
+```vnef
+music <filename>
+play <filename>
 ```
 
-- **audio_file**: The filename of the track located in `assets/music/`.
+## Parameters
+- `<filename>`: The name of the audio file in the music directory.
+  - Default directory: `assets/music/`
 
 ## Example
-```bash
-music theme.mp3
-play scary_ambience.ogg
+```vnef
+music dungeon_theme.ogg
+say Alice "It's cold in here..."
 ```
 
-## Behavior
-- Loops infinitely until changed or the game ends.
-- Stops any previously playing music immediately.
-- Supports MP3 and OGG formats.
+## Notes
+- `music` and `play` currently behave the same in v1.1.0, looping the track until changed.
+- Supported formats: `.ogg`, `.mp3`, `.wav`.

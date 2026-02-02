@@ -1,5 +1,6 @@
 # Binaries
-inkframe*
+vnefall*
+vnefall
 
 # Odin temporary files
 *.o
@@ -13,3 +14,14 @@ bin/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Database (for save system)
+database
+database/
+
+# Demo Assets
+demo-assets/
+
+# Auto-generated manifests
+*.manifest
+assets/manifests/*.manifest

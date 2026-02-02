@@ -78,7 +78,6 @@ font_text_width :: proc(text: string) -> (w: f32) {
 font_wrap_text :: proc(text: string, max_width: f32) -> []string {
     lines: [dynamic]string
     words := strings.split(text, " ")
-    defer delete(words)
     
     b: strings.Builder
     strings.builder_init(&b)
@@ -99,6 +98,8 @@ font_wrap_text :: proc(text: string, max_width: f32) -> []string {
             strings.write_string(&b, word)
         }
     }
+    
+    delete(words)
     
     last := strings.to_string(b)
     if len(last) > 0 do append(&lines, strings.clone(last))
