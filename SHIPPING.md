@@ -2,6 +2,11 @@
 
 This document lists the **runtime libraries** you must ship with exported games, plus build-time requirements.
 
+## Future Work
+- **Vulkan backend (Windows/Linux)** for long-term support and performance.
+- **Metal backend (macOS)** to replace deprecated OpenGL.
+- **Packaging scripts** for Windows `.zip`, macOS `.app`, and Linux AppImage.
+
 ## Runtime Libraries (Required)
 - **SDL2**
 - **SDL2_mixer**
@@ -68,9 +73,3 @@ Windows:
 ## Notes
 - If a shipped build fails to play audio, it is almost always a missing SDL2_mixer codec DLL on Windows.
 - The engine uses **OpenGL 3.3**; older GPUs may fail to run.
-
----
-
-## Future Backends (Planned)
-- **Vulkan (Windows/Linux)**: add a Vulkan renderer backend for long-term support and performance.
-- **Metal (macOS)**: add a Metal renderer backend to replace deprecated OpenGL on macOS.

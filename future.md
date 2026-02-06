@@ -78,8 +78,10 @@ This update combines a simplified character system, Sthiti-DB persistence, and h
 
 ## v1.5.0: System & Settings (Preferences Menu)
 
-- [ ] **Settings Menu**: A pre-built, high-quality menu for Volume (master/music/ambience/sfx/voice), Text Speed, and Display Mode.
-- [ ] **Menu Logic**: Handling settings changes instantly without restarting the engine.
+- [x] **Settings Menu**: Volume (master/music/ambience/sfx/voice), Text Speed, and Display Mode.
+- [x] **Menu Logic**: Apply settings instantly without restarting.
+- [x] **Menu Config**: `menu.vnef` for start/pause/settings layouts and labels.
+- [x] **Scrollable Settings**: Long settings pages remain usable without UI breakage.
 
 ---
 
