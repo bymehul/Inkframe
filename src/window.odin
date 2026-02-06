@@ -71,3 +71,12 @@ window_set_title :: proc(w: ^Window, title: string) {
     defer delete(c_title)
     sdl2.SetWindowTitle(w.handle, c_title)
 }
+
+window_set_fullscreen :: proc(w: ^Window, enabled: bool) {
+    if w == nil || w.handle == nil do return
+    flag := sdl2.WindowFlags{}
+    if enabled {
+        flag = sdl2.WINDOW_FULLSCREEN_DESKTOP
+    }
+    _ = sdl2.SetWindowFullscreen(w.handle, flag)
+}

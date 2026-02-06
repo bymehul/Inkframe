@@ -57,6 +57,10 @@ ui_layer_build_and_render :: proc(g: ^Game_State, r: ^Renderer, w: ^Window, dt: 
         ui_layer_draw_choice_menu(&ui_ctx, theme, g)
     }
 
+    if g.menu.active {
+        ui_layer_draw_menu(&ui_ctx, theme, g)
+    }
+
     cmds := vneui.ui_end_frame(&ui_ctx)
     ui_render_commands(r, w, cmds)
 }

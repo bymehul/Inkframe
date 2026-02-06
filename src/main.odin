@@ -13,7 +13,7 @@ import "core:strings"
 import "core:mem"
 import SDL "vendor:sdl2"
 
-VERSION :: "1.4.1"
+VERSION :: "1.5.0"
 
 Choice_Option :: struct {
     text:  string,
@@ -39,11 +39,16 @@ Game_State :: struct {
     bg_transition: BG_Transition,
     loading_tex:  u32,
     loading_active: bool,
+    menu_bg_tex:  u32,
+    menu_intro_tex: u32,
+    menu_intro_active: bool,
+    menu_intro_timer: f32,
     textbox_tex:  u32,
     choice_tex_idle: u32,
     choice_tex_hov:  u32,
     textbox:      Textbox_State,
     choice:       Choice_State,
+    menu:         Menu_State,
     last_tick:    u32,
 }
 
@@ -99,6 +104,10 @@ main :: proc() {
     defer delete(ui_path)
     ui_config_load(ui_path)
 
+    menu_path := strings.concatenate({base_dir, "menu.vnef"})
+    defer delete(menu_path)
+    menu_config_load(menu_path)
+
     char_path := strings.concatenate({base_dir, "char.vnef"})
     defer delete(char_path)
     char_registry_load(char_path)
@@ -132,17 +141,21 @@ main :: proc() {
         g.last_tick = now
 
         input_poll(&g.input, &g.running)
+        if g.input.menu_pressed {
+            menu_toggle(&g)
+        }
+        menu_intro_update(&g, dt)
         textbox_update(&g.textbox, dt)
         bg_transition_update(&g, dt)
         character_update(dt)
         
-        if g.choice.active {
+        if !g.menu.active && g.choice.active {
             // Keyboard shortcuts 1-9
             np := g.input.number_pressed
             if np > 0 && np <= len(g.choice.options) {
                 choice_apply(&g, np-1)
             }
-        } else if g.input.advance_pressed {
+        } else if !g.menu.active && g.input.advance_pressed {
             if g.textbox.visible && !textbox_is_revealed(&g.textbox) {
                 textbox_reveal_all(&g.textbox)
             } else {
@@ -151,7 +164,7 @@ main :: proc() {
         }
         
         // IP stays here until the user clicks to advance
-        if !g.script.waiting && g.script.ip < len(g.script.commands) {
+        if !g.menu.active && !g.script.waiting && g.script.ip < len(g.script.commands) {
             script_execute(&g.script, &g)
         }
         
@@ -191,6 +204,10 @@ init_game :: proc(script_path: string) -> bool {
     title_cstr := strings.clone_to_cstring(cfg.window_title)
     defer delete(title_cstr)
     if !window_create(&g.window, title_cstr, cfg.window_width, cfg.window_height) do return false
+
+    if g_settings.fullscreen {
+        window_set_fullscreen(&g.window, true)
+    }
     
     // Setup GL state
     if !renderer_init(&g.renderer) do return false
@@ -221,6 +238,25 @@ init_game :: proc(script_path: string) -> bool {
             fmt.eprintln("Warning: Could not load loading image:", load_path)
         } else {
             g.loading_tex = info.id
+        }
+    }
+
+    if menu_cfg.menu_bg_image != "" {
+        menu_path := menu_cfg.menu_bg_image
+        info := texture_load(menu_path)
+        if info.id == 0 {
+            fmt.eprintln("Warning: Could not load menu background:", menu_path)
+        } else {
+            g.menu_bg_tex = info.id
+        }
+    }
+    if menu_cfg.menu_intro_image != "" {
+        intro_path := menu_cfg.menu_intro_image
+        info := texture_load(intro_path)
+        if info.id == 0 {
+            fmt.eprintln("Warning: Could not load menu intro image:", intro_path)
+        } else {
+            g.menu_intro_tex = info.id
         }
     }
 
@@ -255,6 +291,13 @@ init_game :: proc(script_path: string) -> bool {
     character_init()
     g_scenes.current = scene_load_sync(script_path)
     g.last_tick = SDL.GetTicks()
+
+    if menu_cfg.show_start_menu {
+        menu_open_main(&g)
+        if menu_cfg.menu_intro_image != "" {
+            g.menu_intro_active = true
+        }
+    }
     
     g.running = true
     return true
@@ -272,6 +315,7 @@ cleanup_game :: proc() {
     renderer_cleanup(&g.renderer)
     window_destroy(&g.window)
     ui_config_cleanup()
+    menu_config_cleanup()
     char_registry_cleanup()
     settings_cleanup()
     config_cleanup()

@@ -32,6 +32,7 @@ If you want to add a command like `shake_screen` or `show_character`:
 - **Branching Logic**: Scripts support labels, jumps, and player choices. A pre-processing step builds a label-to-index map for instant navigation.
 - **Renderer (`renderer.odin`)**: Uses a single shader and a single buffer. We draw everything as textured quads (2 triangles, 6 vertices).
 - **UI Layer (`ui_layer.odin`)**: Uses **VNEUI** for textbox + choice menus with a theme derived from `ui.vnef`.
+- **Menu System (`menu_state.odin`, `menu_ui.odin`, `menu_config.odin`)**: Pause/start/settings menus are driven by `menu.vnef` and rendered through VNEUI.
 - **Text (`font.odin`)**: Uses `stb_truetype` to bake a font into a single atlas texture.
 - **Audio (`audio.odin`)**: A thin wrapper around `SDL_mixer` with separate channels for **Music**, **Ambience**, **SFX**, and **Voice**. Audio assets are prefetched via manifests during `scene_next`.
 - **Scene System (`scene.odin`, `manifest.odin`)**: Manages asset loading per-scene. Automatically generates manifests and supports background prefetching for zero-stutter transitions.

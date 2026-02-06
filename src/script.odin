@@ -1054,120 +1054,7 @@ script_execute :: proc(s: ^Script, state: ^Game_State) {
     case .Load:
         path := strings.concatenate({cfg.path_saves, c.who, ".sthiti"})
         defer delete(path)
-        
-        save, ok := sthiti.load_from_file(path)
-        if ok {
-            defer sthiti.save_state_destroy(&save)
-            // Restore variables
-            for k, v in save.variables {
-                if old, exists := s.variables[k]; exists {
-                    if str, ok := old.(string); ok do delete(str)
-                    #partial switch val in v {
-                    case i32:    s.variables[k] = int(val)
-                    case string: s.variables[k] = strings.clone(val)
-                    }
-                } else {
-                    key_clone := strings.clone(k)
-                    #partial switch val in v {
-                    case i32:    s.variables[key_clone] = int(val)
-                    case string: s.variables[key_clone] = strings.clone(val)
-                    }
-                }
-            }
-            // If script file is different, we need to reload it
-            if save.script_path != "" && save.script_path != s.path {
-                fmt.printf("[script] Load jumping to file: %s\n", save.script_path)
-                script_load(s, save.script_path)
-                
-                // Reload scene system for this script
-                scene_system_cleanup()
-                scene_init()
-                g_scenes.current = scene_load_sync(save.script_path)
-            }
-            
-            s.ip = int(save.script_ip)
-            
-            // Restore visual environment
-            if save.bg_path != "" {
-                if s.bg_path != "" do delete(s.bg_path)
-                s.bg_path = strings.clone(save.bg_path)
-                
-                tex := scene_get_texture(s.bg_path)
-                if tex != 0 do state.current_bg = tex
-            }
-            
-            // Restore textbox state
-            state.textbox.visible = save.textbox_vis
-            if state.textbox.speaker != "" do delete(state.textbox.speaker)
-            state.textbox.speaker = strings.clone(save.speaker)
-            textbox_set_text(&state.textbox, strings.clone(save.textbox_text))
-            textbox_reveal_all(&state.textbox)
-            
-            // Restore character positions (v4)
-            character_flush_all()
-            for c in save.characters {
-                character_show(c.name, c.sprite_path, c.pos_name, c.z)
-            }
-
-            // Restore audio state
-            audio_stop_music(&state.audio)
-            audio_stop_ambience(&state.audio)
-            audio_stop_voice(&state.audio)
-            audio_stop_sfx_all(&state.audio)
-            
-            if save.music_path != "" {
-                mpath := strings.concatenate({cfg.path_music, save.music_path})
-                defer delete(mpath)
-                audio_play_music(&state.audio, mpath)
-            }
-            if save.ambience_path != "" {
-                apath := strings.concatenate({cfg.path_ambience, save.ambience_path})
-                defer delete(apath)
-                audio_play_ambience(&state.audio, apath)
-            }
-            if save.voice_path != "" {
-                vpath := strings.concatenate({cfg.path_voice, save.voice_path})
-                defer delete(vpath)
-                audio_play_voice(&state.audio, vpath)
-            }
-            for sfx in save.sfx_paths {
-                spath := strings.concatenate({cfg.path_sfx, sfx})
-                defer delete(spath)
-                audio_play_sfx(&state.audio, spath)
-            }
-
-            // Restore choice state (menu does NOT auto-select)
-            choice_clear(state)
-            state.choice.selected = 0
-            if len(save.choice_options) > 0 {
-                for opt in save.choice_options {
-                    append(&state.choice.options, Choice_Option{
-                        text  = strings.clone(opt.text),
-                        label = strings.clone(opt.label),
-                    })
-                }
-                max_idx := len(state.choice.options) - 1
-                sel := int(save.choice_selected)
-                if sel < 0 do sel = 0
-                if sel > max_idx do sel = max_idx
-                state.choice.selected = sel
-            }
-            state.choice.active = save.choice_active && len(state.choice.options) > 0
-            if state.choice.active {
-                s.waiting = true
-            }
-            
-            // If we loaded onto a 'waiting' command (like say), we should be waiting
-            // This prevents the next execute frame from immediately skipping it
-            if s.ip < len(s.commands) {
-                cmd := s.commands[s.ip]
-                if cmd.type == .Say || cmd.type == .ChoiceShow {
-                    s.waiting = true
-                }
-            }
-            
-            fmt.printf("[script] Game loaded from %s\n", path)
-        } else {
+        if !load_game_from_path(state, s, path) {
             fmt.eprintln("[script] Failed to load save:", path)
             s.ip += 1
         }
@@ -1240,6 +1127,126 @@ choice_clear :: proc(state: ^Game_State) {
         delete(opt.label)
     }
     clear(&state.choice.options)
+}
+
+load_game_from_slot :: proc(state: ^Game_State, slot: string) -> bool {
+    if state == nil || slot == "" do return false
+    path := strings.concatenate({cfg.path_saves, slot, ".sthiti"})
+    defer delete(path)
+    return load_game_from_path(state, &state.script, path)
+}
+
+load_game_from_path :: proc(state: ^Game_State, s: ^Script, path: string) -> bool {
+    save, ok := sthiti.load_from_file(path)
+    if !ok do return false
+    defer sthiti.save_state_destroy(&save)
+
+    // Restore variables
+    for k, v in save.variables {
+        if old, exists := s.variables[k]; exists {
+            if str, ok := old.(string); ok do delete(str)
+            #partial switch val in v {
+            case i32:    s.variables[k] = int(val)
+            case string: s.variables[k] = strings.clone(val)
+            }
+        } else {
+            key_clone := strings.clone(k)
+            #partial switch val in v {
+            case i32:    s.variables[key_clone] = int(val)
+            case string: s.variables[key_clone] = strings.clone(val)
+            }
+        }
+    }
+    // If script file is different, reload it
+    if save.script_path != "" && save.script_path != s.path {
+        fmt.printf("[script] Load jumping to file: %s\n", save.script_path)
+        script_load(s, save.script_path)
+        scene_system_cleanup()
+        scene_init()
+        g_scenes.current = scene_load_sync(save.script_path)
+    }
+
+    s.ip = int(save.script_ip)
+
+    // Restore visual environment
+    if save.bg_path != "" {
+        if s.bg_path != "" do delete(s.bg_path)
+        s.bg_path = strings.clone(save.bg_path)
+
+        tex := scene_get_texture(s.bg_path)
+        if tex != 0 do state.current_bg = tex
+    }
+
+    // Restore textbox state
+    state.textbox.visible = save.textbox_vis
+    if state.textbox.speaker != "" do delete(state.textbox.speaker)
+    state.textbox.speaker = strings.clone(save.speaker)
+    textbox_set_text(&state.textbox, strings.clone(save.textbox_text))
+    textbox_reveal_all(&state.textbox)
+
+    // Restore character positions (v4)
+    character_flush_all()
+    for c in save.characters {
+        character_show(c.name, c.sprite_path, c.pos_name, c.z)
+    }
+
+    // Restore audio state
+    audio_stop_music(&state.audio)
+    audio_stop_ambience(&state.audio)
+    audio_stop_voice(&state.audio)
+    audio_stop_sfx_all(&state.audio)
+
+    if save.music_path != "" {
+        mpath := strings.concatenate({cfg.path_music, save.music_path})
+        defer delete(mpath)
+        audio_play_music(&state.audio, mpath)
+    }
+    if save.ambience_path != "" {
+        apath := strings.concatenate({cfg.path_ambience, save.ambience_path})
+        defer delete(apath)
+        audio_play_ambience(&state.audio, apath)
+    }
+    if save.voice_path != "" {
+        vpath := strings.concatenate({cfg.path_voice, save.voice_path})
+        defer delete(vpath)
+        audio_play_voice(&state.audio, vpath)
+    }
+    for sfx in save.sfx_paths {
+        spath := strings.concatenate({cfg.path_sfx, sfx})
+        defer delete(spath)
+        audio_play_sfx(&state.audio, spath)
+    }
+
+    // Restore choice state (menu does NOT auto-select)
+    choice_clear(state)
+    state.choice.selected = 0
+    if len(save.choice_options) > 0 {
+        for opt in save.choice_options {
+            append(&state.choice.options, Choice_Option{
+                text  = strings.clone(opt.text),
+                label = strings.clone(opt.label),
+            })
+        }
+        max_idx := len(state.choice.options) - 1
+        sel := int(save.choice_selected)
+        if sel < 0 do sel = 0
+        if sel > max_idx do sel = max_idx
+        state.choice.selected = sel
+    }
+    state.choice.active = save.choice_active && len(state.choice.options) > 0
+    if state.choice.active {
+        s.waiting = true
+    }
+
+    if s.ip < len(s.commands) {
+        cmd := s.commands[s.ip]
+        if cmd.type == .Say || cmd.type == .ChoiceShow {
+            s.waiting = true
+        }
+    }
+
+    fmt.printf("[script] Game loaded from %s\n", path)
+    return true
 }
 
 script_advance :: proc(s: ^Script, state: ^Game_State) {

@@ -80,8 +80,15 @@ This update combines a simplified character system, Sthiti-DB persistence, and h
 
 - [ ] **Settings Menu**: A pre-built, high-quality menu for Volume (master/music/ambience/sfx/voice), Text Speed, and Display Mode.
 - [ ] **Menu Logic**: Handling settings changes instantly without restarting the engine.
+
+---
+
+## v1.5.5: Reading Flow Quality
+
 - [ ] **Backlog**: A scrollable history window for reviewing previously read text.
 - [ ] **Auto-Advance**: Toggleable mode for automatic reading progression.
+- [ ] **Menu UI Polish**: Layout refinement, branding header styles, and improved focus/hover cues.
+- [ ] **Video / Animation Support**: Basic playback for opening logos, animated backgrounds, and short UI clips.
 
 ---
 

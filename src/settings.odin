@@ -21,6 +21,8 @@ Settings :: struct {
     volume_ambience: f32,
     volume_sfx:    f32,
     volume_voice:  f32,
+    text_speed:    f32,
+    fullscreen:    bool,
 }
 
 g_settings: Settings
@@ -31,6 +33,8 @@ settings_init_defaults :: proc() {
     g_settings.volume_ambience = cfg.volume_ambience
     g_settings.volume_sfx    = cfg.volume_sfx
     g_settings.volume_voice  = cfg.volume_voice
+    g_settings.text_speed    = ui_cfg.text_speed
+    g_settings.fullscreen    = false
 }
 
 settings_set_path :: proc(path: string) {
@@ -92,11 +96,17 @@ settings_load :: proc(path: string = "") -> bool {
         case "volume_voice":
             v, _ := strconv.parse_f32(val)
             g_settings.volume_voice = v
+        case "text_speed":
+            v, _ := strconv.parse_f32(val)
+            g_settings.text_speed = v
+        case "fullscreen":
+            g_settings.fullscreen = parse_bool(val)
         }
         
         delete(parts)
     }
     
+    ui_cfg.text_speed = g_settings.text_speed
     fmt.printf("[settings] Loaded settings from %s\n", use_path)
     return true
 }
@@ -112,6 +122,8 @@ settings_save :: proc(path: string = "") -> bool {
     fmt.sbprintf(&b, "volume_ambience = %v\n", g_settings.volume_ambience)
     fmt.sbprintf(&b, "volume_sfx    = %v\n", g_settings.volume_sfx)
     fmt.sbprintf(&b, "volume_voice  = %v\n", g_settings.volume_voice)
+    fmt.sbprintf(&b, "text_speed    = %v\n", g_settings.text_speed)
+    fmt.sbprintf(&b, "fullscreen    = %v\n", g_settings.fullscreen)
     
     content := strings.to_string(b)
     use_path := settings_resolve_path(path)
@@ -120,6 +132,11 @@ settings_save :: proc(path: string = "") -> bool {
 
 settings_cleanup :: proc() {
     if g_settings_path != "" do delete(g_settings_path)
+}
+
+settings_reset_defaults :: proc() {
+    settings_init_defaults()
+    ui_cfg.text_speed = g_settings.text_speed
 }
 
 settings_set_volume :: proc(channel: string, value: f32) {

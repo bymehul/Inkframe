@@ -89,7 +89,10 @@ label end_story:
 
 ## Controls
 - **Click / Space / Enter**: Next line.
-- **Escape**: Quit.
+- **Escape**: Open/close the pause menu.
+
+## Roadmap
+See `future.md` for the full roadmap. v1.5.x includes menu UI polish and quality-of-life reading features.
 
 ## Contributing
 Check out [CONTRIBUTING.md](CONTRIBUTING.md) for the guide. We like clean, readable code with simple logic.

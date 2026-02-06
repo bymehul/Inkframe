@@ -7,6 +7,7 @@ Input_State :: struct {
     up_pressed:      bool,
     down_pressed:    bool,
     select_pressed:  bool,
+    menu_pressed:    bool,
     mouse_x:         i32,
     mouse_y:         i32,
     mouse_down:      bool,
@@ -20,6 +21,7 @@ input_poll :: proc(input: ^Input_State, running: ^bool) {
     input.up_pressed      = false
     input.down_pressed    = false
     input.select_pressed  = false
+    input.menu_pressed    = false
     input.mouse_pressed   = false
     input.mouse_released  = false
     input.number_pressed  = 0
@@ -42,7 +44,7 @@ input_poll :: proc(input: ^Input_State, running: ^bool) {
             case .DOWN:
                 input.down_pressed = true
             case .ESCAPE:
-                running^ = false
+                input.menu_pressed = true
             case .NUM1, .NUM2, .NUM3, .NUM4, .NUM5, .NUM6, .NUM7, .NUM8, .NUM9:
                 input.number_pressed = int(ev.key.keysym.sym) - int(sdl2.Keycode.NUM1) + 1
             }
