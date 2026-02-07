@@ -35,13 +35,15 @@ If you want to add a command like `shake_screen` or `show_character`:
 - **Menu System (`menu_state.odin`, `menu_ui.odin`, `menu_config.odin`)**: Pause/start/settings menus are driven by `menu.vnef` and rendered through VNEUI.
 - **Text (`font.odin`)**: Uses `stb_truetype` to bake a font into a single atlas texture.
 - **Audio (`audio.odin`)**: A thin wrapper around `SDL_mixer` with separate channels for **Music**, **Ambience**, **SFX**, and **Voice**. Audio assets are prefetched via manifests during `scene_next`.
+- **Video (`video.odin`)**: FFmpeg-backed decode (via `vnef-video`) with a lightweight movie layer. Movies are listed in manifests and prefetched (first frame). Auto-mapped audio plays via a dedicated channel.
+- **Background Blur (`bg_blur.odin`)**: Full-res Gaussian blur via ping-pong FBOs. Cached per background and driven by `bg_blur` or `bg <file> blur=...`. Quality is controlled by `bg_blur_quality` in `config.vnef`.
 - **Scene System (`scene.odin`, `manifest.odin`)**: Manages asset loading per-scene. Automatically generates manifests and supports background prefetching for zero-stutter transitions.
 - **Shared Asset Reuse**: When switching scenes, assets present in both current and next manifests (textures + audio) are preserved to avoid double-loading and reduce memory spikes.
 - **Loading Screen**: If a new script doesn’t set a `bg` immediately, the engine can show a configurable loading image (`loading_image` in `ui.vnef`).
 - **Character System (`character.odin`)**: A singleton-style manager for sprites. Supports **Scale-to-Fit** (80% vertical height), **Z-Order** sorted drawing, and simple show/hide transitions.
 - **Transitions (`transitions.odin`)**: Background transitions are centralized here. `with` sets a one-shot transition for the next `bg` or `char`.
 - **Text Effects (`textbox.odin`)**: Inline tags like `{color=...}` and `{shake}` + per-line speed override.
-- **Persistence (`sthiti/`)**: Uses Sthiti-DB v6 for binary state serialization. Saves all global variables (integers and strings), current textbox text, active character states, script position, environment, audio state, and active choice menus.
+- **Persistence (`sthiti/`)**: Uses Sthiti-DB v8 for binary state serialization. Saves all global variables (integers and strings), current textbox text, active character states, script position, environment, audio state, choice menus, and background blur state.
 
 ## Graphics API Strategy
 We use **OpenGL 3.3** for its high compatibility and simplicity. While Apple has deprecated OpenGL, it remains the most portable "starter" API for 2D engines.

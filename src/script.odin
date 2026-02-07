@@ -9,6 +9,7 @@ import "sthiti"
 Command_Type :: enum {
     None,
     Bg,
+    BgBlur,
     Say,
     Wait,
     End,
@@ -40,6 +41,13 @@ Command_Type :: enum {
     Scene,      // scene "chapter_1"
     SceneNext,  // scene_next "chapter_2" (prefetch)
     With,       // with fade 400
+    Movie,      // movie "intro.video" [options]
+    MovieStop,  // movie stop
+    MoviePause, // movie pause
+    MovieResume,// movie resume
+    TextboxShow,// textbox show
+    TextboxHide,// textbox hide
+    TextboxWait,// textbox wait (hide until click)
 }
 
 Command :: struct {
@@ -201,7 +209,45 @@ parse_line :: proc(line: string) -> (cmd: Command) {
     if strings.has_prefix(line, "bg ") {
         cmd.type = .Bg
         rest := strings.trim_space(line[3:])
-        cmd.who = strings.clone(strings.trim(rest, "\""))
+        path := ""
+        tail := ""
+        
+        if len(rest) > 0 && rest[0] == '"' {
+            q2 := strings.index(rest[1:], "\"")
+            if q2 != -1 {
+                path = rest[1 : 1+q2]
+                tail = strings.trim_space(rest[1+q2+1:])
+            } else {
+                path = strings.trim(rest, "\"")
+            }
+        } else {
+            parts := strings.split(rest, " ")
+            defer delete(parts)
+            if len(parts) >= 1 {
+                path = parts[0]
+            }
+            if len(parts) > 1 {
+                tail = strings.trim_space(rest[len(parts[0]):])
+            }
+        }
+        
+        cmd.who = strings.clone(strings.trim_space(path))
+        if tail != "" {
+            parts := strings.split(tail, " ")
+            defer delete(parts)
+            for p in parts {
+                t := strings.trim_space(p)
+                if t == "" do continue
+                append(&cmd.args, strings.clone(strings.trim(t, "\"")))
+            }
+        }
+        return
+    }
+
+    // bg_blur <value>
+    if strings.has_prefix(line, "bg_blur ") {
+        cmd.type = .BgBlur
+        cmd.what = strings.clone(strings.trim_space(line[8:]))
         return
     }
 
@@ -218,6 +264,79 @@ parse_line :: proc(line: string) -> (cmd: Command) {
             cmd.what = strings.clone(strings.trim_space(parts[1]))
         }
         return
+    }
+
+    // movie "intro.video" [loop] [hold] [wait] [layer=bg|fg] [blur=0.4] [textbox=hide|wait]
+    if strings.has_prefix(line, "movie ") {
+        rest := strings.trim_space(line[6:])
+        if rest == "stop" {
+            cmd.type = .MovieStop
+            return
+        }
+        if rest == "pause" {
+            cmd.type = .MoviePause
+            return
+        }
+        if rest == "resume" {
+            cmd.type = .MovieResume
+            return
+        }
+        
+        cmd.type = .Movie
+        path := ""
+        tail := ""
+        
+        if len(rest) > 0 && rest[0] == '"' {
+            q2 := strings.index(rest[1:], "\"")
+            if q2 != -1 {
+                path = rest[1 : 1+q2]
+                tail = strings.trim_space(rest[1+q2+1:])
+            } else {
+                path = strings.trim(rest, "\"")
+            }
+        } else {
+            parts := strings.split(rest, " ")
+            defer delete(parts)
+            if len(parts) >= 1 {
+                path = parts[0]
+            }
+            if len(parts) > 1 {
+                for i := 1; i < len(parts); i += 1 {
+                    t := strings.trim_space(parts[i])
+                    if t == "" do continue
+                    append(&cmd.args, strings.clone(strings.trim(t, "\"")))
+                }
+            }
+        }
+        
+        cmd.who = strings.clone(strings.trim_space(path))
+        if tail != "" {
+            parts := strings.split(tail, " ")
+            defer delete(parts)
+            for p in parts {
+                t := strings.trim_space(p)
+                if t == "" do continue
+                append(&cmd.args, strings.clone(strings.trim(t, "\"")))
+            }
+        }
+        return
+    }
+
+    // textbox show|hide|wait
+    if strings.has_prefix(line, "textbox ") {
+        rest := strings.trim_space(line[8:])
+        if rest == "show" {
+            cmd.type = .TextboxShow
+            return
+        }
+        if rest == "hide" {
+            cmd.type = .TextboxHide
+            return
+        }
+        if rest == "wait" {
+            cmd.type = .TextboxWait
+            return
+        }
     }
     
     // dialogue: say Alice "Hello"
@@ -598,9 +717,274 @@ script_execute :: proc(s: ^Script, state: ^Game_State) {
         transition_set_override(t_kind, ms)
         s.ip += 1
 
+    case .BgBlur:
+        val := f32(0)
+        if c.what != "" {
+            lower := strings.to_lower(strings.trim_space(c.what))
+            defer delete(lower)
+            if lower == "off" || lower == "none" {
+                val = 0
+            } else if v, ok := strconv.parse_f32(c.what); ok {
+                val = v
+            }
+        }
+        if val < 0 do val = 0
+        state.bg_blur_strength = val
+        state.bg_blur_base = val
+        state.bg_blur_override_active = false
+        bg_blur_set_strength(&state.bg_blur, val)
+        s.ip += 1
+
+    case .Movie:
+        // Options: loop, hold, wait, layer=bg|fg, blur=0.4, textbox=hide|wait
+        loop := false
+        hold := false
+        wait := false
+        audio_enabled := true
+        rect_x: f32 = 0
+        rect_y: f32 = 0
+        rect_w: f32 = 0
+        rect_h: f32 = 0
+        use_rect := false
+        fit := ""
+        align := ""
+        layer := Video_Layer.Background
+        blur: f32 = 0
+        textbox_hide := false
+        textbox_wait := false
+        
+        for arg in c.args {
+            lower := strings.to_lower(arg)
+            defer delete(lower)
+            
+            if lower == "loop" {
+                loop = true
+                continue
+            }
+            if lower == "audio=on" || lower == "audio=1" || lower == "audio=true" {
+                audio_enabled = true
+                continue
+            }
+            if lower == "audio=off" || lower == "audio=0" || lower == "audio=false" || lower == "mute" {
+                audio_enabled = false
+                continue
+            }
+            if lower == "hold" || lower == "hold_last" {
+                hold = true
+                continue
+            }
+            if lower == "wait" {
+                wait = true
+                continue
+            }
+            if lower == "bg" || lower == "background" {
+                layer = .Background
+                continue
+            }
+            if lower == "fg" || lower == "front" || lower == "foreground" {
+                layer = .Foreground
+                continue
+            }
+            if strings.has_prefix(lower, "layer=") {
+                val := strings.trim_space(lower[6:])
+                if val == "fg" || val == "front" || val == "foreground" {
+                    layer = .Foreground
+                } else {
+                    layer = .Background
+                }
+                continue
+            }
+            if strings.has_prefix(lower, "blur=") {
+                if v, ok := strconv.parse_f32(strings.trim_space(lower[5:])); ok do blur = v
+                continue
+            }
+            if strings.has_prefix(lower, "x=") {
+                if v, ok := strconv.parse_f32(strings.trim_space(lower[2:])); ok {
+                    rect_x = v
+                    use_rect = true
+                }
+                continue
+            }
+            if strings.has_prefix(lower, "y=") {
+                if v, ok := strconv.parse_f32(strings.trim_space(lower[2:])); ok {
+                    rect_y = v
+                    use_rect = true
+                }
+                continue
+            }
+            if strings.has_prefix(lower, "w=") {
+                if v, ok := strconv.parse_f32(strings.trim_space(lower[2:])); ok {
+                    rect_w = v
+                    use_rect = true
+                }
+                continue
+            }
+            if strings.has_prefix(lower, "h=") {
+                if v, ok := strconv.parse_f32(strings.trim_space(lower[2:])); ok {
+                    rect_h = v
+                    use_rect = true
+                }
+                continue
+            }
+            if strings.has_prefix(lower, "fit=") {
+                fit = strings.clone(strings.trim_space(lower[4:]))
+                continue
+            }
+            if strings.has_prefix(lower, "align=") {
+                align = strings.clone(strings.trim_space(lower[6:]))
+                continue
+            }
+            if lower == "hide_textbox" || lower == "textbox=hide" {
+                textbox_hide = true
+                continue
+            }
+            if lower == "textbox=wait" || lower == "textbox_wait" {
+                textbox_wait = true
+                continue
+            }
+        }
+        
+        if textbox_wait {
+            textbox_hide = true
+            wait = true
+            state.textbox.show_on_click = true
+        }
+        if textbox_hide {
+            state.textbox.force_hidden = true
+            state.textbox.visible = false
+            if !textbox_wait {
+                state.textbox.show_on_click = false
+            }
+        }
+        if c.who == "" {
+            fmt.eprintln("[script] movie: missing path")
+            s.ip += 1
+            return
+        }
+
+        // Build video path
+        path := ""
+        if strings.has_prefix(c.who, "/") || strings.has_prefix(c.who, "./") || strings.has_prefix(c.who, "../") || strings.contains(c.who, ":\\") {
+            path = strings.clone(c.who)
+        } else {
+            ext := ".video"
+            if strings.contains(c.who, ".") do ext = ""
+            path = strings.concatenate({cfg.path_videos, c.who, ext})
+        }
+        defer delete(path)
+
+        // Auto-map audio: path_video_audio + <base>.ogg
+        if audio_enabled && cfg.path_video_audio != "" {
+            base := c.who
+            if idx := strings.last_index(base, "/"); idx != -1 {
+                base = base[idx+1:]
+            }
+            if idx := strings.last_index(base, "\\"); idx != -1 {
+                base = base[idx+1:]
+            }
+            if dot := strings.last_index(base, "."); dot != -1 {
+                base = base[:dot]
+            }
+            audio_path := strings.concatenate({cfg.path_video_audio, base, ".ogg"})
+            if os.is_file(audio_path) {
+                audio_play_video(&state.audio, audio_path)
+            } else {
+                audio_stop_video(&state.audio)
+            }
+            delete(audio_path)
+        } else {
+            audio_stop_video(&state.audio)
+        }
+        
+        opts := Video_Play_Options{
+            loop = loop,
+            hold_last = hold,
+            wait_for_click = wait,
+            blur_alpha = blur,
+            layer = layer,
+            x = rect_x,
+            y = rect_y,
+            w = rect_w,
+            h = rect_h,
+            use_rect = use_rect,
+            fit = fit,
+            align = align,
+        }
+        
+        if !video_play(&state.video, path, opts) {
+            if fit != "" do delete(fit)
+            if align != "" do delete(align)
+            s.ip += 1
+            return
+        }
+        if fit != "" do delete(fit)
+        if align != "" do delete(align)
+        
+        if wait {
+            s.waiting = true
+            return
+        }
+        s.ip += 1
+
+    case .MovieStop:
+        video_stop(&state.video)
+        audio_stop_video(&state.audio)
+        s.ip += 1
+
+    case .MoviePause:
+        video_pause(&state.video)
+        audio_pause_video(&state.audio)
+        s.ip += 1
+
+    case .MovieResume:
+        video_resume(&state.video)
+        audio_resume_video(&state.audio)
+        s.ip += 1
+
+    case .TextboxShow:
+        state.textbox.force_hidden = false
+        state.textbox.show_on_click = false
+        state.textbox.visible = true
+        s.ip += 1
+
+    case .TextboxHide:
+        state.textbox.force_hidden = true
+        state.textbox.show_on_click = false
+        state.textbox.visible = false
+        s.ip += 1
+
+    case .TextboxWait:
+        state.textbox.force_hidden = true
+        state.textbox.show_on_click = true
+        state.textbox.visible = false
+        s.waiting = true
+
     case .Bg:
         if s.bg_path != "" do delete(s.bg_path)
         s.bg_path = strings.clone(c.who)
+
+        // Optional one-shot blur override: bg "image.png" blur=12
+        blur_override: f32 = -1
+        for arg in c.args {
+            lower := strings.to_lower(arg)
+            defer delete(lower)
+            if strings.has_prefix(lower, "blur=") {
+                if v, ok := strconv.parse_f32(strings.trim_space(lower[5:])); ok {
+                    blur_override = v
+                }
+            }
+        }
+        if blur_override >= 0 {
+            if blur_override < 0 do blur_override = 0
+            state.bg_blur_strength = blur_override
+            state.bg_blur_override_active = true
+            bg_blur_set_strength(&state.bg_blur, blur_override)
+        } else if state.bg_blur_override_active {
+            // Revert to persistent blur when no override is provided.
+            state.bg_blur_strength = state.bg_blur_base
+            state.bg_blur_override_active = false
+            bg_blur_set_strength(&state.bg_blur, state.bg_blur_base)
+        }
         
         tex := scene_get_texture(c.who)
         if tex != 0 do bg_transition_start(state, tex)
@@ -885,7 +1269,11 @@ script_execute :: proc(s: ^Script, state: ^Game_State) {
         }
 
     case .Say:
-        state.textbox.visible = true
+        if !state.textbox.force_hidden {
+            state.textbox.visible = true
+        } else {
+            state.textbox.visible = false
+        }
         state.textbox.speaker = c.who
         
         // Handle interpolation
@@ -1003,6 +1391,9 @@ script_execute :: proc(s: ^Script, state: ^Game_State) {
         save.script_path = strings.clone(s.path)
         save.script_ip   = i32(s.ip) // Save EXACT current index (don't skip)
         if s.bg_path != "" do save.bg_path = strings.clone(s.bg_path)
+        save.bg_blur_base = state.bg_blur_base
+        save.bg_blur_value = state.bg_blur_strength
+        save.bg_blur_override = state.bg_blur_override_active
         
         // Save current textbox state
         save.textbox_vis = state.textbox.visible
@@ -1176,6 +1567,10 @@ load_game_from_path :: proc(state: ^Game_State, s: ^Script, path: string) -> boo
         tex := scene_get_texture(s.bg_path)
         if tex != 0 do state.current_bg = tex
     }
+    state.bg_blur_base = save.bg_blur_base
+    state.bg_blur_strength = save.bg_blur_value
+    state.bg_blur_override_active = save.bg_blur_override
+    bg_blur_set_strength(&state.bg_blur, save.bg_blur_value)
 
     // Restore textbox state
     state.textbox.visible = save.textbox_vis

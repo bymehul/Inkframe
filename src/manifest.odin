@@ -25,6 +25,8 @@ Manifest :: struct {
     ambience:    [dynamic]string,
     sfx:         [dynamic]string,
     voice:       [dynamic]string,
+    videos:      [dynamic]string,
+    video_audio: [dynamic]string,
 }
 
 // Generate a manifest by scanning a script file for asset commands
@@ -51,7 +53,22 @@ manifest_generate :: proc(script_path: string) -> (Manifest, bool) {
         
         // Parse asset commands
         if strings.has_prefix(trimmed, "bg ") {
-            asset := strings.trim_space(trimmed[3:])
+            rest := strings.trim_space(trimmed[3:])
+            asset := ""
+            if len(rest) > 0 && rest[0] == '"' {
+                q2 := strings.index(rest[1:], "\"")
+                if q2 != -1 {
+                    asset = rest[1 : 1+q2]
+                } else {
+                    asset = strings.trim(rest, "\"")
+                }
+            } else {
+                parts := strings.split(rest, " ")
+                defer delete(parts)
+                if len(parts) >= 1 {
+                    asset = parts[0]
+                }
+            }
             asset = strings.trim(asset, "\"")
             
             ext := ".png"
@@ -142,10 +159,70 @@ manifest_generate :: proc(script_path: string) -> (Manifest, bool) {
             if !contains_string(m.voice[:], asset_full) {
                 append(&m.voice, strings.clone(asset_full))
             }
+        } else if strings.has_prefix(trimmed, "movie ") {
+            rest := strings.trim_space(trimmed[6:])
+            if rest == "stop" || rest == "pause" || rest == "resume" do continue
+
+            path := ""
+            tail := ""
+            if len(rest) > 0 && rest[0] == '"' {
+                q2 := strings.index(rest[1:], "\"")
+                if q2 != -1 {
+                    path = rest[1 : 1+q2]
+                    tail = strings.trim_space(rest[1+q2+1:])
+                } else {
+                    path = strings.trim(rest, "\"")
+                }
+            } else {
+                parts := strings.split(rest, " ")
+                defer delete(parts)
+                if len(parts) >= 1 {
+                    path = parts[0]
+                }
+                if len(parts) > 1 {
+                    tail = strings.trim_space(rest[len(parts[0]):])
+                }
+            }
+
+            if path == "" do continue
+            ext := ".video"
+            if strings.contains(path, ".") do ext = ""
+            asset_full := strings.concatenate({path, ext})
+            defer delete(asset_full)
+
+            if !contains_string(m.videos[:], asset_full) {
+                append(&m.videos, strings.clone(asset_full))
+            }
+
+            // Only prefetch audio if not explicitly disabled
+            audio_disabled := false
+            if tail != "" {
+                parts := strings.split(tail, " ")
+                defer delete(parts)
+                for p in parts {
+                    t := strings.to_lower(strings.trim_space(p))
+                    defer delete(t)
+                    if t == "audio=off" || t == "audio=0" || t == "audio=false" || t == "mute" {
+                        audio_disabled = true
+                        break
+                    }
+                }
+            }
+            if !audio_disabled {
+                base := path
+                if idx := strings.last_index(base, "/"); idx != -1 do base = base[idx+1:]
+                if idx := strings.last_index(base, "\\"); idx != -1 do base = base[idx+1:]
+                if dot := strings.last_index(base, "."); dot != -1 do base = base[:dot]
+                audio_file := strings.concatenate({base, ".ogg"})
+                defer delete(audio_file)
+                if !contains_string(m.video_audio[:], audio_file) {
+                    append(&m.video_audio, strings.clone(audio_file))
+                }
+            }
         }
     }
     
-    total := len(m.backgrounds) + len(m.sprites) + len(m.music) + len(m.ambience) + len(m.sfx) + len(m.voice)
+    total := len(m.backgrounds) + len(m.sprites) + len(m.music) + len(m.ambience) + len(m.sfx) + len(m.voice) + len(m.videos) + len(m.video_audio)
     fmt.printf("[manifest] Generated manifest for %s: %d assets\n", script_path, total)
     
     return m, true
@@ -189,6 +266,12 @@ manifest_load :: proc(path: string) -> (Manifest, bool) {
         } else if strings.has_prefix(trimmed, "voice ") {
             asset := strings.trim_space(trimmed[6:])
             append(&m.voice, strings.clone(asset))
+        } else if strings.has_prefix(trimmed, "video ") {
+            asset := strings.trim_space(trimmed[6:])
+            append(&m.videos, strings.clone(asset))
+        } else if strings.has_prefix(trimmed, "video_audio ") {
+            asset := strings.trim_space(trimmed[12:])
+            append(&m.video_audio, strings.clone(asset))
         }
     }
     
@@ -240,6 +323,18 @@ manifest_save :: proc(m: ^Manifest, path: string) -> bool {
         strings.write_string(&b, vo)
         strings.write_string(&b, "\n")
     }
+
+    for v in m.videos {
+        strings.write_string(&b, "video ")
+        strings.write_string(&b, v)
+        strings.write_string(&b, "\n")
+    }
+
+    for va in m.video_audio {
+        strings.write_string(&b, "video_audio ")
+        strings.write_string(&b, va)
+        strings.write_string(&b, "\n")
+    }
     
     content := strings.to_string(b)
     ok := os.write_entire_file(path, transmute([]u8)content)
@@ -261,6 +356,10 @@ manifest_cleanup :: proc(m: ^Manifest) {
     delete(m.sfx)
     for vo in m.voice do delete(vo)
     delete(m.voice)
+    for v in m.videos do delete(v)
+    delete(m.videos)
+    for va in m.video_audio do delete(va)
+    delete(m.video_audio)
 }
 
 // Helper to check if a string is in a slice

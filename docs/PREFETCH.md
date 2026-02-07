@@ -6,8 +6,9 @@ Prefetching allows your game to load assets for the next script in the backgroun
 When you call `scene_next "my_next_script"`, the engine:
 1.  Generates/Loads a **Manifest** for that script.
 2.  Loads all **Textures** (backdrops and sprites) into GPU memory.
-3.  Prefetches **Audio** (music, ambience, SFX, voice) into memory.
-4.  Holds them in a "Ready" state until a `jump_file` command is triggered.
+3.  Prefetches **Audio** (music, ambience, SFX, voice, video-audio) into memory.
+4.  Prefetches **Video** (first frame) so movie playback starts cleanly.
+5.  Holds them in a "Ready" state until a `jump_file` command is triggered.
 
 ## 🖼️ Optional Loading Screen
 If the next script doesn’t immediately set a `bg`, the engine can show a loading screen instead of a black flash.

@@ -74,7 +74,7 @@ ui_input_from_game :: proc(g: ^Game_State, w: ^Window, dt: f32) -> vneui.UI_Inpu
         mouse_down = g.input.mouse_down,
         mouse_pressed = g.input.mouse_pressed,
         mouse_released = g.input.mouse_released,
-        scroll_y = 0,
+        scroll_y = g.input.scroll_y,
         delta_time = dt,
         text_input = "",
         key_backspace = false,

@@ -14,6 +14,10 @@ window_resizable = true
 design_width  = 1280
 design_height = 720
 
+# Background Blur Quality
+# high = full-res gaussian, medium = half-res gaussian, low = half-res fewer passes
+bg_blur_quality = "high"
+
 # Path Settings
 path_assets    = "demo/assets/"
 path_images    = "demo/assets/images/"
@@ -21,6 +25,8 @@ path_music     = "demo/assets/music/"
 path_ambience  = "demo/assets/ambience/"
 path_sfx       = "demo/assets/sfx/"
 path_voice     = "demo/assets/voice/"
+path_videos    = "demo/assets/videos/"
+path_video_audio = "demo/runtime/video_audio/"
 path_scripts   = "demo/assets/scripts/"
 path_manifests = "demo/assets/manifests/"
 path_characters = "demo/assets/images/characters/"

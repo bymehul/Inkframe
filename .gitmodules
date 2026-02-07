@@ -1,0 +1,6 @@
+[submodule "utils/vnef-tools"]
+	path = utils/vnef-tools
+	url = https://github.com/Vnefall/vnef-tools
+[submodule "utils/vnef-video"]
+	path = utils/vnef-video
+	url = https://github.com/Vnefall/vnef-video

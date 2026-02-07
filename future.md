@@ -82,6 +82,9 @@ This update combines a simplified character system, Sthiti-DB persistence, and h
 - [x] **Menu Logic**: Apply settings instantly without restarting.
 - [x] **Menu Config**: `menu.vnef` for start/pause/settings layouts and labels.
 - [x] **Scrollable Settings**: Long settings pages remain usable without UI breakage.
+- [x] **Movie Playback (Core)**: `movie` command with layer control and textbox hide/wait.
+- [x] **Movie Prefetch**: First-frame prefetch via manifests.
+- [x] **Auto Video Audio**: `path_video_audio/<name>.ogg` auto-mapping.
 
 ---
 
@@ -90,6 +93,7 @@ This update combines a simplified character system, Sthiti-DB persistence, and h
 - [ ] **Backlog**: A scrollable history window for reviewing previously read text.
 - [ ] **Auto-Advance**: Toggleable mode for automatic reading progression.
 - [ ] **Menu UI Polish**: Layout refinement, branding header styles, and improved focus/hover cues.
+- [ ] **Video Runtime Packaging**: Auto-copy `libvnef_video` next to the binary or embed an rpath so video playback works without manual `cp`.
 
 ---
 
@@ -119,7 +123,7 @@ This update combines a simplified character system, Sthiti-DB persistence, and h
 ## v2: Future Horizons
 
 - [ ] **Layered Sprite Model**: Full `base` + `outfit` + `expression` compositing.
-- [ ] **Video / Animation Support**: Basic playback for opening logos, animated backgrounds, and short UI clips.
+- [ ] **Advanced Video / Animation**: Alpha-masked movies, transforms, per-layer blending, and timeline DSL.
 - [ ] **WGPU Port**: Move to `wgpu` or `sokol_gfx` for Web (WASM) and Mobile support.
 - [ ] **Live2D / Mesh Warp**: Support for subtle breathing/blink animations.
 - [ ] **Rollback System**: Full state "Back" command (Rewind time).

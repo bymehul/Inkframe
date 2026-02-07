@@ -17,6 +17,7 @@ Audio_State :: struct {
     music_cached: bool,
     ambience_path: string,
     voice_path: string,
+    video_path: string,
     sfx_paths: [SFX_CHANNEL_COUNT]string,
     volume_master: f32,
     volume_music:  f32,
@@ -37,6 +38,7 @@ SFX_CHANNEL_END   :: 7
 SFX_CHANNEL_COUNT :: SFX_CHANNEL_END - SFX_CHANNEL_START + 1
 VOICE_CHANNEL     :: 8
 AMBIENCE_CHANNEL  :: 9
+VIDEO_CHANNEL     :: 10
 
 audio_init :: proc(a: ^Audio_State) -> bool {
     // We want MP3 and OGG support for v1
@@ -93,6 +95,7 @@ audio_cleanup :: proc(a: ^Audio_State) {
     }
     if a.ambience_path != "" do delete(a.ambience_path)
     if a.voice_path != "" do delete(a.voice_path)
+    if a.video_path != "" do delete(a.video_path)
     for i := 0; i < len(a.sfx_paths); i += 1 {
         if a.sfx_paths[i] != "" {
             delete(a.sfx_paths[i])
@@ -180,6 +183,36 @@ audio_stop_voice :: proc(a: ^Audio_State) {
         delete(a.voice_path)
         a.voice_path = ""
     }
+}
+
+audio_play_video :: proc(a: ^Audio_State, path: string) {
+    if !a.inited do return
+
+    audio_log("[audio] video -> %s\n", path)
+    chunk := audio_load_chunk(a, path)
+    if chunk == nil do return
+
+    mix.HaltChannel(i32(VIDEO_CHANNEL))
+    if a.video_path != "" do delete(a.video_path)
+    a.video_path = strings.clone(path)
+    mix.PlayChannel(i32(VIDEO_CHANNEL), chunk, 0)
+}
+
+audio_stop_video :: proc(a: ^Audio_State) {
+    audio_log("[audio] video stop\n")
+    mix.HaltChannel(i32(VIDEO_CHANNEL))
+    if a.video_path != "" {
+        delete(a.video_path)
+        a.video_path = ""
+    }
+}
+
+audio_pause_video :: proc(a: ^Audio_State) {
+    mix.Pause(i32(VIDEO_CHANNEL))
+}
+
+audio_resume_video :: proc(a: ^Audio_State) {
+    mix.Resume(i32(VIDEO_CHANNEL))
 }
 
 audio_stop_sfx_all :: proc(a: ^Audio_State) {
@@ -350,6 +383,7 @@ audio_apply_volumes :: proc(a: ^Audio_State) {
         mix.Volume(i32(ch), sfx_vol)
     }
     mix.Volume(i32(VOICE_CHANNEL), voice_vol)
+    mix.Volume(i32(VIDEO_CHANNEL), music_vol)
 }
 
 audio_set_volume :: proc(a: ^Audio_State, channel: string, value: f32) {
@@ -456,7 +490,7 @@ to_mixer_volume :: proc(v: f32) -> i32 {
 audio_prefetch_scene :: proc(a: ^Audio_State, m: ^Manifest) {
     if !a.inited do return
     
-    audio_log("[audio] prefetch: %d music, %d ambience, %d sfx, %d voice\n", len(m.music), len(m.ambience), len(m.sfx), len(m.voice))
+    audio_log("[audio] prefetch: %d music, %d ambience, %d sfx, %d voice, %d video_audio\n", len(m.music), len(m.ambience), len(m.sfx), len(m.voice), len(m.video_audio))
     // Prefetch music into cache
     for mu in m.music {
         cpath := strings.concatenate({cfg.path_music, mu})
@@ -493,6 +527,12 @@ audio_prefetch_scene :: proc(a: ^Audio_State, m: ^Manifest) {
         defer delete(path)
         audio_load_chunk(a, path)
     }
+
+    for va in m.video_audio {
+        path := strings.concatenate({cfg.path_video_audio, va})
+        defer delete(path)
+        audio_load_chunk(a, path)
+    }
 }
 
 audio_flush_scene :: proc(a: ^Audio_State, m: ^Manifest) {
@@ -502,6 +542,7 @@ audio_flush_scene :: proc(a: ^Audio_State, m: ^Manifest) {
     // Stop ambience, voice, and SFX channels before freeing chunks
     mix.HaltChannel(i32(AMBIENCE_CHANNEL))
     mix.HaltChannel(i32(VOICE_CHANNEL))
+    mix.HaltChannel(i32(VIDEO_CHANNEL))
     for ch := SFX_CHANNEL_START; ch <= SFX_CHANNEL_END; ch += 1 {
         mix.HaltChannel(i32(ch))
     }
@@ -547,6 +588,11 @@ audio_flush_scene :: proc(a: ^Audio_State, m: ^Manifest) {
         defer delete(path)
         audio_remove_chunk_entry(a, path)
     }
+    for va in m.video_audio {
+        path := strings.concatenate({cfg.path_video_audio, va})
+        defer delete(path)
+        audio_remove_chunk_entry(a, path)
+    }
 }
 
 audio_flush_scene_keep :: proc(a: ^Audio_State, m: ^Manifest, keep: ^Manifest) {
@@ -563,6 +609,7 @@ audio_flush_scene_keep :: proc(a: ^Audio_State, m: ^Manifest, keep: ^Manifest) {
         }
     }
     mix.HaltChannel(i32(VOICE_CHANNEL))
+    mix.HaltChannel(i32(VIDEO_CHANNEL))
     for ch := SFX_CHANNEL_START; ch <= SFX_CHANNEL_END; ch += 1 {
         mix.HaltChannel(i32(ch))
     }
@@ -613,6 +660,14 @@ audio_flush_scene_keep :: proc(a: ^Audio_State, m: ^Manifest, keep: ^Manifest) {
         if contains_string_audio(keep.voice[:], vo) do continue
         
         path := strings.concatenate({cfg.path_voice, vo})
+        defer delete(path)
+        audio_remove_chunk_entry(a, path)
+    }
+
+    for va in m.video_audio {
+        if contains_string_audio(keep.video_audio[:], va) do continue
+        
+        path := strings.concatenate({cfg.path_video_audio, va})
         defer delete(path)
         audio_remove_chunk_entry(a, path)
     }

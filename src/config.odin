@@ -31,6 +31,8 @@ Config :: struct {
     path_ambience:   string,
     path_sfx:        string,
     path_voice:      string,
+    path_videos:     string,
+    path_video_audio: string,
     path_scripts:    string,
     path_manifests:  string,
     path_characters: string,
@@ -43,6 +45,9 @@ Config :: struct {
     volume_ambience: f32,
     volume_sfx:      f32,
     volume_voice:    f32,
+
+    // Visual effects
+    bg_blur_quality: string, // high | medium | low
 }
 
 // Global config instance
@@ -65,6 +70,8 @@ config_init_defaults :: proc() {
     cfg.path_ambience  = strings.clone("demo/assets/ambience/")
     cfg.path_sfx       = strings.clone("demo/assets/sfx/")
     cfg.path_voice     = strings.clone("demo/assets/voice/")
+    cfg.path_videos    = strings.clone("demo/assets/videos/")
+    cfg.path_video_audio = strings.clone("demo/runtime/video_audio/")
     cfg.path_scripts   = strings.clone("demo/assets/scripts/")
     cfg.path_manifests = strings.clone("demo/assets/manifests/")
     cfg.path_characters = strings.clone("demo/assets/images/characters/")
@@ -76,6 +83,8 @@ config_init_defaults :: proc() {
     cfg.volume_ambience = 1.0
     cfg.volume_sfx    = 1.0
     cfg.volume_voice  = 1.0
+
+    cfg.bg_blur_quality = strings.clone("high")
 }
 
 config_load :: proc(path: string) -> bool {
@@ -153,6 +162,12 @@ config_load :: proc(path: string) -> bool {
         case "path_voice":
             delete(cfg.path_voice)
             cfg.path_voice    = strings.clone(strings.trim(val, "\""))
+        case "path_videos":
+            delete(cfg.path_videos)
+            cfg.path_videos   = strings.clone(strings.trim(val, "\""))
+        case "path_video_audio":
+            delete(cfg.path_video_audio)
+            cfg.path_video_audio = strings.clone(strings.trim(val, "\""))
         case "path_scripts":    
             delete(cfg.path_scripts)
             cfg.path_scripts  = strings.clone(strings.trim(val, "\""))
@@ -184,6 +199,12 @@ config_load :: proc(path: string) -> bool {
         case "volume_voice":
             v, _ := strconv.parse_f32(val)
             cfg.volume_voice = v
+
+        case "bg_blur_quality":
+            delete(cfg.bg_blur_quality)
+            tmp := strings.to_lower(strings.trim(val, "\""))
+            defer delete(tmp)
+            cfg.bg_blur_quality = strings.clone(tmp)
         }
         
         delete(parts)
@@ -202,11 +223,14 @@ config_cleanup :: proc() {
     delete(cfg.path_ambience)
     delete(cfg.path_sfx)
     delete(cfg.path_voice)
+    delete(cfg.path_videos)
+    delete(cfg.path_video_audio)
     delete(cfg.path_scripts)
     delete(cfg.path_manifests)
     delete(cfg.path_characters)
     delete(cfg.path_saves)
     delete(cfg.entry_script)
+    delete(cfg.bg_blur_quality)
 }
 
 // Parses 0xRRGGBBAA or #RRGGBBAA into [4]f32

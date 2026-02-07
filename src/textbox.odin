@@ -44,6 +44,8 @@ textbox_destroy :: proc(tb: ^Textbox_State) {
     textbox_clear_segments(tb)
     delete(tb.segments)
     delete(tb.shown_segments)
+    tb.force_hidden = false
+    tb.show_on_click = false
 }
 
 textbox_is_revealed :: proc(tb: ^Textbox_State) -> bool {

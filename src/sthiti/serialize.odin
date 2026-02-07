@@ -22,6 +22,13 @@ serialize_save_state :: proc(s: Save_State) -> []u8 {
 	append_string(&buf, s.script_path)
 	append_i32(&buf, s.script_ip)
 	append_string(&buf, s.bg_path)
+	if s.version >= 8 {
+		append_f32(&buf, s.bg_blur_base)
+		append_f32(&buf, s.bg_blur_value)
+		append_bool(&buf, s.bg_blur_override)
+	} else if s.version >= 7 {
+		append_f32(&buf, s.bg_blur_value)
+	}
 	append_string(&buf, s.music_path)
 	if s.version >= 5 {
 		append_string(&buf, s.ambience_path)
@@ -96,6 +103,10 @@ append_i32 :: proc(b: ^[dynamic]u8, val: i32) {
 	for d in data do append(b, d)
 }
 
+append_f32 :: proc(b: ^[dynamic]u8, val: f32) {
+	append_u32(b, transmute(u32)val)
+}
+
 append_bool :: proc(b: ^[dynamic]u8, val: bool) {
 	append(b, val ? 1 : 0)
 }
@@ -124,6 +135,19 @@ deserialize_save_state :: proc(data: []u8) -> (s: Save_State, ok: bool) {
 	s.script_path = read_string(data, &ptr)
 	s.script_ip = read_i32(data, &ptr)
 	s.bg_path = read_string(data, &ptr)
+	if s.version >= 8 {
+		s.bg_blur_base = read_f32(data, &ptr)
+		s.bg_blur_value = read_f32(data, &ptr)
+		s.bg_blur_override = read_bool(data, &ptr)
+	} else if s.version >= 7 {
+		s.bg_blur_base = read_f32(data, &ptr)
+		s.bg_blur_value = s.bg_blur_base
+		s.bg_blur_override = false
+	} else {
+		s.bg_blur_base = 0
+		s.bg_blur_value = 0
+		s.bg_blur_override = false
+	}
 	s.music_path = read_string(data, &ptr)
 	if s.version >= 5 {
 		s.ambience_path = read_string(data, &ptr)
@@ -215,6 +239,11 @@ read_i32 :: proc(b: []u8, ptr: ^int) -> i32 {
 	val, _ := endian.get_i32(b[ptr^ : ptr^ + 4], .Little)
 	ptr^ += 4
 	return val
+}
+
+read_f32 :: proc(b: []u8, ptr: ^int) -> f32 {
+	bits := read_u32(b, ptr)
+	return transmute(f32)bits
 }
 
 read_bool :: proc(b: []u8, ptr: ^int) -> bool {

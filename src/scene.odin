@@ -92,6 +92,7 @@ scene_load_sync :: proc(script_path: string) -> ^Scene {
     // Load all textures
     scene_load_textures(s, nil)
     audio_prefetch_scene(&g.audio, &s.manifest)
+    video_prefetch_scene(&s.manifest)
     
     s.ready = true
     s.loading = false
@@ -142,6 +143,7 @@ scene_cleanup :: proc(s: ^Scene) {
     
     delete(s.name)
     audio_flush_scene(&g.audio, &s.manifest)
+    video_prefetch_release_for_manifest(&s.manifest)
     
     // Delete OpenGL textures owned by this scene
     for path, &tex in s.textures {
@@ -162,6 +164,7 @@ scene_cleanup_keep :: proc(s: ^Scene, next: ^Scene) {
     
     delete(s.name)
     audio_flush_scene_keep(&g.audio, &s.manifest, &next.manifest)
+    video_prefetch_release_for_manifest(&s.manifest, &next.manifest)
     
     // Delete OpenGL textures owned by this scene (skip shared)
     for path, &tex in s.textures {
@@ -261,6 +264,7 @@ scene_prefetch :: proc(script_path: string) {
     // Load textures immediately (main thread for OpenGL safety)
     scene_load_textures(s, g_scenes.current)
     audio_prefetch_scene(&g.audio, &s.manifest)
+    video_prefetch_scene(&s.manifest)
     
     s.loading = false
     s.ready = true

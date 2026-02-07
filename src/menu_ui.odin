@@ -374,15 +374,19 @@ menu_start_fresh :: proc(g: ^Game_State) {
     g.choice.selected = 0
     textbox_destroy(&g.textbox)
     g.textbox.visible = false
+    g.textbox.force_hidden = false
+    g.textbox.show_on_click = false
     g.textbox.speaker = ""
     g.textbox.text = ""
     g.textbox.shake = false
     g.textbox.speed_override_active = false
     g.textbox.speed_override = 0
+    video_stop(&g.video)
 
     audio_stop_music(&g.audio)
     audio_stop_ambience(&g.audio)
     audio_stop_voice(&g.audio)
+    audio_stop_video(&g.audio)
     audio_stop_sfx_all(&g.audio)
     audio_apply_settings(&g.audio)
 

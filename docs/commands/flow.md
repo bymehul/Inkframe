@@ -34,6 +34,19 @@ jump_file "chapter_2.vnef"
 - Old script is cleaned up automatically
 - Combine with `scene_next` for instant transitions
 
+### `wait`
+
+Pauses script execution until the player clicks.
+
+```vnef
+say Alice "..."
+wait
+say Alice "Thanks for waiting."
+```
+
+**Notes**
+- This is a hard pause; no automatic advance.
+
 ## Multi-File Game Example
 
 ### chapter_1.vnef

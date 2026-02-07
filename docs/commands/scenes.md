@@ -33,9 +33,9 @@ say Alice "What a beautiful day!"
 
 ## How It Works
 
-1. **Auto-Generated Manifests**: When a scene is first loaded, the engine scans the script for `bg`, `sprite`, `music`, `ambience`, `sfx`, and `voice` commands and creates a `.manifest` file listing all required assets.
+1. **Auto-Generated Manifests**: When a scene is first loaded, the engine scans the script for `bg`, `sprite`, `music`, `ambience`, `sfx`, `voice`, and `movie` commands and creates a `.manifest` file listing all required assets.
 
-2. **Prefetching**: `scene_next` loads the manifest and prepares textures + audio while the player is still reading. This minimizes loading screens; if the new script doesn’t set a `bg` quickly, a loading image can be shown.
+2. **Prefetching**: `scene_next` loads the manifest and prepares textures + audio + movie first-frames while the player is still reading. This minimizes loading screens; if the new script doesn’t set a `bg` quickly, a loading image can be shown.
 
 3. **Memory Management**: Each scene owns its textures. When you switch scenes, assets not required by the next scene are freed automatically, while shared textures/audio are preserved to avoid reloading spikes.
 
@@ -68,6 +68,8 @@ music beach_theme.ogg
 ambience ocean_waves.ogg
 sfx door_open.ogg
 voice alice_intro.ogg
+video intro.video
+video_audio intro.ogg
 ```
 
 ## Best Practices

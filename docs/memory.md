@@ -35,6 +35,8 @@ Scenes manage assets for each chapter, freeing them when switching.
 | Manifests | `manifest.odin` | `manifest_cleanup()` |
 | Scene manager | `scene.odin` | `scene_system_cleanup()` |
 | Scene audio (music/ambience/SFX/voice) | `audio.odin` | `audio_flush_scene()` |
+| Scene video prefetch (first-frame textures) | `video.odin` | `video_prefetch_release_for_manifest()` |
+| Scene video audio prefetch (auto-mapped `.ogg`) | `audio.odin` | `audio_flush_scene()` |
 
 **Shared Asset Preservation**: When switching scenes, assets that exist in both the current and next scene (textures and audio) are retained to avoid double-loading and reduce VRAM/heap spikes.
 

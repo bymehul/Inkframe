@@ -1,6 +1,7 @@
 # Binaries
 vnefall*
 vnefall
+libvnef_video.so
 *.sthiti
 # Odin temporary files
 *.o
@@ -10,6 +11,7 @@ vnefall
 
 # Build artifacts
 bin/
+utils/vnef-video/build/
 
 # OS files
 .DS_Store

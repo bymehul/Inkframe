@@ -14,6 +14,7 @@ Vnefall is a simple, no-nonsense visual novel engine. It's built in Odin using S
 - **Character Stacking**: Responsive scaling and Z-index control for sprites.
 - **Cinematic Transitions**: `with fade|wipe|slide|dissolve|zoom|blur|flash|shake|none` for backgrounds + character fades/slides.
 - **Text Effects**: Inline `{color=...}` tags, `{shake}`, and per-line `[speed=...]` overrides.
+- **Movie Playback**: `movie` command for `.video`/`.webm` cutscenes with optional blur and textbox control.
 
 ## How to get started
 
@@ -49,21 +50,26 @@ odin build src -out:vnefall.exe
 **Mac:**
 ```bash
 brew install sdl2 sdl2_mixer
-odin build src -out:vnefall
+./build.sh
 ./vnefall demo/assets/scripts/demo.vnef
 ```
+
+If you enable `movie`, `build.sh` will also build `utils/vnef-video` (requires FFmpeg dev libs).
 
 ## Writing your own story
 
 Scripts are just simple text files ending in `.vnef`. You can change backgrounds, play music, and write dialogue without touching a single line of code.
 
 See the [detailed command guide](docs/commands/) for all available commands.
+If you see `Path does not exist: vnef_video`, use `./build.sh` or pass the `-collection:vnefvideo=...` flags shown in `build.sh`.
 
 Project layout (demo-style):
-- `demo/config.vnef` (engine paths, entry script, resolution)
+- `demo/config.vnef` (engine paths, entry script, resolution, `bg_blur_quality`)
 - `demo/ui.vnef` (textbox, choice UI, transitions)
 - `demo/char.vnef` (per-character name/text colors)
 - `demo/assets/` (images, audio, scripts)
+- `demo/assets/videos/` (video files, `.video` or `.webm`)
+- `demo/runtime/video_audio/` (auto-mapped `.ogg` audio for movies)
 
 Here's what a script looks like:
 ```vnef

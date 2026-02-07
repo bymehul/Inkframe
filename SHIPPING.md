@@ -14,6 +14,13 @@ This document lists the **runtime libraries** you must ship with exported games,
 
 These are required by the engine at runtime for window/input, audio, and rendering.
 
+## Runtime Libraries (Optional — Video)
+If you enable the `movie` command (vnef-video), you must also ship:
+- **vnef_video** shared library
+- **FFmpeg libs**: `libavformat`, `libavcodec`, `libavutil`, `libswscale`, `libswresample`
+
+Build note: if you see `Path does not exist: vnef_video`, build with `./build.sh` or pass `-collection:vnefvideo=./utils/vnef-video/bindings` (see `build.sh`).
+
 ## Embedded (No External Shipping Needed)
 - `stb_image`
 - `stb_truetype`

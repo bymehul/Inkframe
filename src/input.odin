@@ -13,6 +13,7 @@ Input_State :: struct {
     mouse_down:      bool,
     mouse_pressed:   bool,
     mouse_released:  bool,
+    scroll_y:        f32,
     number_pressed:  int, // 1-9 if pressed, otherwise 0
 }
 
@@ -24,6 +25,7 @@ input_poll :: proc(input: ^Input_State, running: ^bool) {
     input.menu_pressed    = false
     input.mouse_pressed   = false
     input.mouse_released  = false
+    input.scroll_y        = 0
     input.number_pressed  = 0
     
     sdl2.GetMouseState(&input.mouse_x, &input.mouse_y)
@@ -62,6 +64,13 @@ input_poll :: proc(input: ^Input_State, running: ^bool) {
                 input.mouse_released = true
                 input.mouse_down     = false
             }
+
+        case .MOUSEWHEEL:
+            dy := f32(ev.wheel.y)
+            if ev.wheel.direction == cast(u32)sdl2.MouseWheelDirection.FLIPPED {
+                dy = -dy
+            }
+            input.scroll_y += dy
         }
     }
 }

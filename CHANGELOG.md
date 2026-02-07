@@ -2,6 +2,22 @@
 
 All notable changes to Vnefall will be documented in this file.
 
+## [1.5.0] - 2026-02-07
+### Added
+- **Menu System**: Start/Pause/Settings menus driven by `menu.vnef`.
+- **Window Modes**: `window_mode = windowed|fullscreen|borderless` + resizable toggle.
+- **Movie Playback**: New `movie` command with layer control + textbox hide/wait.
+- **Video Prefetch**: Movies are added to manifests and prefetched (first frame).
+- **Auto Video Audio**: `movie` auto-plays `path_video_audio/<name>.ogg` (optional).
+- **Textbox Controls**: `textbox show|hide|wait` commands.
+- **Background Blur**: `bg_blur <value>` (stateful) + `bg <file> blur=<value>` (one-shot).
+- **Blur Quality**: `bg_blur_quality = high|medium|low` in `config.vnef`.
+
+### Changed
+- **Config Paths**: Added `path_videos` and `path_video_audio`.
+- **Prefetch**: Manifest system now tracks movie + video-audio assets.
+- **Sthiti-DB v8**: Saves now include background blur state.
+
 ## [1.4.0] - 2026-02-04
 ### Added
 - **UI Config Split**: New `demo/ui.vnef` (UI styling + transitions) and `demo/char.vnef` (per-character name/text colors).

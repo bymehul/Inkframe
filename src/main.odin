@@ -44,9 +44,14 @@ Game_State :: struct {
     audio:        Audio_State,
     script:       Script,
     input:        Input_State,
+    video:        Video_State,
     
     current_bg:   u32,           // OpenGL texture handle
     bg_transition: BG_Transition,
+    bg_blur_strength: f32,
+    bg_blur_base: f32,
+    bg_blur_override_active: bool,
+    bg_blur:     BG_Blur_State,
     loading_tex:  u32,
     loading_active: bool,
     menu_bg_tex:  u32,
@@ -67,6 +72,8 @@ Game_State :: struct {
 
 Textbox_State :: struct {
     visible:      bool,
+    force_hidden: bool,
+    show_on_click: bool,
     speaker:      string,
     text:         string,
     reveal_count: int,
@@ -159,6 +166,9 @@ main :: proc() {
         textbox_update(&g.textbox, dt)
         bg_transition_update(&g, dt)
         character_update(dt)
+        if video_update(&g.video, dt) {
+            audio_stop_video(&g.audio)
+        }
         
         if !g.menu.active && g.choice.active {
             // Keyboard shortcuts 1-9
@@ -167,7 +177,27 @@ main :: proc() {
                 choice_apply(&g, np-1)
             }
         } else if !g.menu.active && g.input.advance_pressed {
-            if g.textbox.visible && !textbox_is_revealed(&g.textbox) {
+            if g.video.wait_for_click {
+                g.video.wait_for_click = false
+                if g.video.hold_last {
+                    video_pause(&g.video)
+                } else {
+                    video_stop(&g.video)
+                }
+                audio_stop_video(&g.audio)
+                if g.textbox.show_on_click {
+                    g.textbox.show_on_click = false
+                    g.textbox.force_hidden = false
+                    g.textbox.visible = true
+                }
+                script_advance(&g.script, &g)
+            } else if g.textbox.show_on_click {
+                g.textbox.show_on_click = false
+                g.textbox.force_hidden = false
+                g.textbox.visible = true
+                // If we were waiting on a textbox/movie gate, advance once.
+                script_advance(&g.script, &g)
+            } else if g.textbox.visible && !textbox_is_revealed(&g.textbox) {
                 textbox_reveal_all(&g.textbox)
             } else {
                 script_advance(&g.script, &g)
@@ -192,13 +222,50 @@ main :: proc() {
                 ty := cfg.design_height / 2
                 renderer_draw_text(&g.renderer, msg, tx, ty, ui_cfg.text_color)
             }
+        } else if g.bg_blur_strength > 0 {
+            if !bg_blur_init(&g.bg_blur, &g.renderer) {
+                if g.bg_transition.active {
+                    bg_transition_draw(&g, &g.renderer)
+                } else if g.current_bg != 0 {
+                    renderer_draw_fullscreen(&g.renderer, g.current_bg)
+                }
+            } else {
+                bg_blur_set_strength(&g.bg_blur, g.bg_blur_strength)
+                needs_update := g.bg_transition.active ||
+                    g.bg_blur.last_bg_tex != g.current_bg ||
+                    g.bg_blur.last_strength != g.bg_blur.strength
+                
+                if needs_update {
+                    bg_blur_begin_capture(&g.bg_blur, &g.renderer)
+                    if g.bg_transition.active {
+                        bg_transition_draw(&g, &g.renderer)
+                    } else if g.current_bg != 0 {
+                        renderer_draw_fullscreen(&g.renderer, g.current_bg)
+                    }
+                    bg_blur_end_capture(&g.bg_blur, &g.renderer, &g.window)
+                    bg_blur_apply(&g.bg_blur, &g.renderer, &g.window, g.bg_blur.iterations)
+                    g.bg_blur.last_bg_tex = g.current_bg
+                    g.bg_blur.last_strength = g.bg_blur.strength
+                }
+                if g.bg_blur.tex_a != 0 {
+                    renderer_draw_fullscreen(&g.renderer, g.bg_blur.tex_a)
+                }
+            }
         } else if g.bg_transition.active {
             bg_transition_draw(&g, &g.renderer)
         } else if g.current_bg != 0 {
             renderer_draw_fullscreen(&g.renderer, g.current_bg)
         }
+
+        if g.video.active && g.video.layer == .Background {
+            video_draw_layer(&g.video, &g.renderer)
+        }
         
         character_draw_all(&g.renderer)
+
+        if g.video.active && g.video.layer == .Foreground {
+            video_draw_layer(&g.video, &g.renderer)
+        }
         
         ui_layer_build_and_render(&g, &g.renderer, &g.window, dt)
         
@@ -222,6 +289,7 @@ init_game :: proc(script_path: string) -> bool {
     
     // Setup GL state
     if !renderer_init(&g.renderer) do return false
+    _ = bg_blur_init(&g.bg_blur, &g.renderer)
     
     // Audio is optional, don't crash if it fails
     if !audio_init(&g.audio) {
@@ -330,6 +398,8 @@ cleanup_game :: proc() {
     choice_clear(&g)
     delete(g.choice.options)
     textbox_destroy(&g.textbox)
+    video_cleanup(&g.video)
+    bg_blur_cleanup(&g.bg_blur)
     script_destroy(&g.script)
     character_cleanup()
     scene_system_cleanup()

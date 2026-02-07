@@ -5,7 +5,7 @@ import "core:fmt"
 import "core:mem"
 
 STHITI_MAGIC   :: "STHITI"
-STHITI_VERSION :: 6  // Bumped for audio + choice state support
+STHITI_VERSION :: 8  // Bumped for bg_blur base/override support
 
 // Variable can be int or string
 Variable :: union {
@@ -40,6 +40,9 @@ Save_State :: struct {
 	
 	// Visual/Audio environment (To resume exactly as it was)
 	bg_path:     string,        // Current background image
+	bg_blur_base: f32,          // Persistent blur (bg_blur)
+	bg_blur_value: f32,         // Current blur value (after overrides)
+	bg_blur_override: bool,     // Whether a one-shot override is active
 	music_path:  string,        // Current playing music (asset name)
 	ambience_path: string,      // Current ambience (asset name)
 	voice_path: string,         // Current voice clip (asset name)
