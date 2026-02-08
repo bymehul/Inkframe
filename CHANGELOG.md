@@ -2,6 +2,19 @@
 
 All notable changes to Vnefall will be documented in this file.
 
+## [1.5.2] - 2026-02-08
+### Added
+- **Odin Video Builder**: `utils/vnef-tools/build_videos.odin` (Python kept as legacy fallback).
+- **Build Hook**: `build.sh --prep-videos` runs the video conversion step before compiling.
+- **Save Menu**: Pause menu includes Save and shows 10 pages × 6 slots.
+
+### Changed
+- **Movie Extension Policy**: Only `.video` is accepted; other extensions are rejected with clear errors.
+- **Video Tooling**: Bundled ffmpeg detection for `third_party/ffmpeg/bin` + `lib`.
+
+### Fixed
+- **Input Mapping**: Window size updates run each frame to keep click targets accurate.
+
 ## [1.5.0] - 2026-02-07
 ### Added
 - **Menu System**: Start/Pause/Settings menus driven by `menu.vnef`.
