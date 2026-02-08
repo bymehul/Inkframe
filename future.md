@@ -98,6 +98,16 @@ This update combines a simplified character system, Sthiti-DB persistence, and h
 
 ---
 
+## v1.5.3: Movie Pipeline Polish
+
+- [x] **Video Source vs Runtime Split**: `path_videos_src` for source mp4/webm, `path_videos` for generated `.video` in `demo/runtime/videos/`.
+- [x] **Audio Extraction**: `build_videos --audio --audio-out <dir>` extracts `basename.ogg` to `path_video_audio`.
+- [x] **Menu Start Script**: Start menu now launches the CLI-provided script path (falls back to `entry_script`).
+- [x] **Video Debug Noise**: `vnef-video` debug logs are gated behind `VNEF_VIDEO_DEBUG` (default off).
+- [x] **Prefetch Cache Cleanup**: Release cached video path keys when prefetched textures are evicted.
+
+---
+
 ## v1.5.5: Reading Flow Quality & Menu Polish
 
 - [ ] **Backlog**: A scrollable history window for reviewing previously read text.
@@ -108,6 +118,13 @@ This update combines a simplified character system, Sthiti-DB persistence, and h
 - [ ] **Save Menu Polish**: Disabled styling for empty slots + clearer page indicator.
 - [ ] **Video Runtime Packaging**: Auto-copy `libvnef_video` next to the binary or embed an rpath so video playback works without manual `cp`.
 - [ ] **Video Pipeline Integration**: Conversion is manual (`--prep-videos`), with no auto-detect or missing-asset warnings yet.
+
+---
+
+## Final Things To Do (Release Constraints)
+
+- [ ] **FFmpeg Is Build-Time Only**: Game releases ship `.video` + `.ogg` outputs; do not bundle ffmpeg with player builds.
+- [ ] **Tooling Bundles Are Per-OS**: If we bundle ffmpeg for creators, provide per-platform binaries (Linux/Windows/macOS) or require system ffmpeg.
 
 ---
 

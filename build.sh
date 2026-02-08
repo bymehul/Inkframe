@@ -13,7 +13,8 @@ Options:
   --recursive                Scan input directory recursively
   --keep-webm                 Keep intermediate .webm files
   --force                     Overwrite outputs if they exist
-  --audio                     Keep audio (Opus)
+  --audio                     Extract audio to .ogg (Opus)
+  --audio-out <dir>           Output directory for extracted audio (.ogg)
   --audio-bitrate <k>         Opus bitrate in kbps
   --crf <n>                   VP9 quality (lower=better)
   --deadline <mode>           realtime|good|best
@@ -39,7 +40,7 @@ while [[ $# -gt 0 ]]; do
       VIDEO_ARGS+=("$1")
       shift
       ;;
-    --audio-bitrate|--crf|--deadline|--cpu-used|--ffmpeg)
+    --audio-bitrate|--audio-out|--crf|--deadline|--cpu-used|--ffmpeg)
       VIDEO_ARGS+=("$1" "$2")
       shift 2
       ;;
@@ -61,8 +62,29 @@ if [[ "$PREP_VIDEOS" == "1" ]]; then
     usage
     exit 1
   fi
+  HAS_FFMPEG_ARG=0
+  HAS_AUDIO_OUT=0
+  HAS_AUDIO=0
+  for arg in "${VIDEO_ARGS[@]}"; do
+    if [[ "$arg" == "--ffmpeg" ]]; then
+      HAS_FFMPEG_ARG=1
+    elif [[ "$arg" == "--audio-out" ]]; then
+      HAS_AUDIO_OUT=1
+    elif [[ "$arg" == "--audio" ]]; then
+      HAS_AUDIO=1
+      break
+    fi
+  done
+  if [[ "$HAS_FFMPEG_ARG" -eq 0 ]]; then
+    if command -v ffmpeg >/dev/null 2>&1; then
+      VIDEO_ARGS+=(--ffmpeg "$(command -v ffmpeg)")
+    fi
+  fi
+  if [[ "$HAS_AUDIO" -eq 1 && "$HAS_AUDIO_OUT" -eq 0 ]]; then
+    VIDEO_ARGS+=(--audio-out "demo/runtime/video_audio")
+  fi
   echo "Preparing videos..."
-  odin run utils/vnef-tools/build_videos.odin -- "$VIDEO_SRC" "$VIDEO_OUT" "${VIDEO_ARGS[@]}"
+  odin run utils/vnef-tools/build_videos.odin -file -- "$VIDEO_SRC" "$VIDEO_OUT" "${VIDEO_ARGS[@]}"
 fi
 
 echo "Building Vnefall..."

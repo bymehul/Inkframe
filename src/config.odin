@@ -70,7 +70,7 @@ config_init_defaults :: proc() {
     cfg.path_ambience  = strings.clone("demo/assets/ambience/")
     cfg.path_sfx       = strings.clone("demo/assets/sfx/")
     cfg.path_voice     = strings.clone("demo/assets/voice/")
-    cfg.path_videos    = strings.clone("demo/assets/videos/")
+    cfg.path_videos    = strings.clone("demo/runtime/videos/")
     cfg.path_video_audio = strings.clone("demo/runtime/video_audio/")
     cfg.path_scripts   = strings.clone("demo/assets/scripts/")
     cfg.path_manifests = strings.clone("demo/assets/manifests/")

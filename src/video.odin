@@ -53,8 +53,13 @@ Video_State :: struct {
     path: string,
 }
 
+Video_Prefetch_Entry :: struct {
+    key: string,
+    tex: u32,
+}
+
 @(private)
-video_prefetch_cache: map[string]u32
+video_prefetch_cache: map[string]Video_Prefetch_Entry
 
 @(private)
 video_full_path :: proc(asset: string) -> string {
@@ -68,7 +73,7 @@ video_full_path :: proc(asset: string) -> string {
 video_prefetch_path :: proc(asset: string) {
     if asset == "" do return
     if video_prefetch_cache == nil {
-        video_prefetch_cache = make(map[string]u32)
+        video_prefetch_cache = make(map[string]Video_Prefetch_Entry)
     }
     if _, ok := video_prefetch_cache[asset]; ok do return
 
@@ -103,7 +108,8 @@ video_prefetch_path :: proc(asset: string) {
             gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, vf.width, vf.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, vf.data)
             gl.PixelStorei(gl.UNPACK_ROW_LENGTH, 0)
             vnef_video.vne_video_free_video_frame(&vf)
-            video_prefetch_cache[strings.clone(asset)] = tex
+            key := strings.clone(asset)
+            video_prefetch_cache[key] = Video_Prefetch_Entry{key = key, tex = tex}
             return
         case .VNE_FRAME_AUDIO:
             vnef_video.vne_video_free_audio_frame(&af)
@@ -124,9 +130,10 @@ video_prefetch_scene :: proc(m: ^Manifest) {
 
 video_prefetch_take :: proc(path: string) -> (u32, bool) {
     if video_prefetch_cache == nil do return 0, false
-    if tex, ok := video_prefetch_cache[path]; ok {
-        delete_key(&video_prefetch_cache, path)
-        return tex, true
+    if entry, ok := video_prefetch_cache[path]; ok {
+        delete(entry.key)
+        delete_key(&video_prefetch_cache, entry.key)
+        return entry.tex, true
     }
     return 0, false
 }
@@ -136,9 +143,10 @@ video_prefetch_release_for_manifest :: proc(m: ^Manifest, keep: ^Manifest = nil)
     for v in m.videos {
         if keep != nil && contains_string_video(keep.videos[:], v) do continue
         full := video_full_path(v)
-        if tex, ok := video_prefetch_cache[full]; ok {
-            gl.DeleteTextures(1, &tex)
-            delete_key(&video_prefetch_cache, full)
+        if entry, ok := video_prefetch_cache[full]; ok {
+            gl.DeleteTextures(1, &entry.tex)
+            delete(entry.key)
+            delete_key(&video_prefetch_cache, entry.key)
         }
         delete(full)
     }

@@ -2,6 +2,19 @@
 
 All notable changes to Vnefall will be documented in this file.
 
+## [1.5.3] - 2026-02-08
+### Added
+- **Video Source/Runtime Split**: Source videos live in `demo/assets/videos_src/`, generated `.video` assets in `demo/runtime/videos/`.
+- **Audio Extraction**: `build_videos --audio --audio-out <dir>` writes `basename.ogg` to `path_video_audio`.
+- **Movie Debug Gating**: `vnef-video` logs are disabled by default (enable with `VNEF_VIDEO_DEBUG=1` at build time).
+
+### Changed
+- **Start Menu Script**: CLI-provided script path now overrides `entry_script` for Start.
+- **Docs**: README + tool docs clarify video pipeline and runtime directories.
+
+### Fixed
+- **Video Prefetch Cache Leak**: Prefetch cache now releases cloned path keys when evicted.
+
 ## [1.5.2] - 2026-02-08
 ### Added
 - **Odin Video Builder**: `utils/vnef-tools/build_videos.odin` (Python kept as legacy fallback).
@@ -11,9 +24,11 @@ All notable changes to Vnefall will be documented in this file.
 ### Changed
 - **Movie Extension Policy**: Only `.video` is accepted; other extensions are rejected with clear errors.
 - **Video Tooling**: Bundled ffmpeg detection for `third_party/ffmpeg/bin` + `lib`.
+- **Video Paths**: `.video` artifacts now live in `demo/runtime/videos/` (source files in `demo/assets/videos_src/`).
 
 ### Fixed
 - **Input Mapping**: Window size updates run each frame to keep click targets accurate.
+- **Start Menu Script**: Start menu now launches the CLI-provided script path (falls back to `entry_script`).
 
 ## [1.5.0] - 2026-02-07
 ### Added

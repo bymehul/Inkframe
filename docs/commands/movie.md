@@ -29,8 +29,10 @@ movie stop
 
 ## Notes
 - If the filename has no extension, `.video` is assumed. **Only `.video` is supported**; other extensions are rejected. Convert with `vnef-tools` first.
-- Video files are loaded from `path_videos` in `config.vnef` unless an explicit path is used.
+- Video files are loaded from `path_videos` in `config.vnef` unless an explicit path is used. Default is `demo/runtime/videos/` (generated artifacts).
+- Source files (mp4/webm/etc) should live in `path_videos_src` (tooling-only). Convert with `vnef-tools` to `.video`.
 - Video audio is auto-mapped from `path_video_audio/<basename>.ogg` when `audio=on`.
+- Use `vnef-tools build_videos --audio --audio-out <dir>` to extract `.ogg` alongside your `.video` artifacts.
 - `.video` is the container produced by `vnef-tools` (WebM wrapped with a small header).
 - Video audio uses the engine’s audio system (via a dedicated channel). If no matching audio file exists, it stays silent.
 - Movies listed in a script are added to the scene manifest and prefetched (first frame) during `scene_next`.

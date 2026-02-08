@@ -46,6 +46,7 @@ Game_State :: struct {
     script:       Script,
     input:        Input_State,
     video:        Video_State,
+    start_script: string,
     
     current_bg:   u32,           // OpenGL texture handle
     bg_transition: BG_Transition,
@@ -146,6 +147,10 @@ main :: proc() {
     } else {
         fmt.println("[vnefall] using default script:", script_path)
     }
+    if g.start_script != "" {
+        delete(g.start_script)
+    }
+    g.start_script = strings.clone(script_path)
     
     // Kick things off
     if !init_game(script_path) {
@@ -415,4 +420,8 @@ cleanup_game :: proc() {
     char_registry_cleanup()
     settings_cleanup()
     config_cleanup()
+    if g.start_script != "" {
+        delete(g.start_script)
+        g.start_script = ""
+    }
 }

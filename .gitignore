@@ -27,6 +27,13 @@ demo-assets/
 referencepose/
 demo-audios/
 Witches and Wizards/
+# Generated video artifacts
+demo/runtime/videos/
+demo/runtime/video_audio/
 # Auto-generated manifests
 *.manifest
 assets/manifests/*.manifest
+
+# Local logs / scratch
+log.txt
+testvideos/

@@ -14,7 +14,8 @@ Vnefall is a simple, no-nonsense visual novel engine. It's built in Odin using S
 - **Character Stacking**: Responsive scaling and Z-index control for sprites.
 - **Cinematic Transitions**: `with fade|wipe|slide|dissolve|zoom|blur|flash|shake|none` for backgrounds + character fades/slides.
 - **Text Effects**: Inline `{color=...}` tags, `{shake}`, and per-line `[speed=...]` overrides.
-- **Movie Playback**: `movie` command for `.video`/`.webm` cutscenes with optional blur and textbox control.
+- **Movie Playback**: `movie` command for `.video` cutscenes with optional blur and textbox control.
+- **Video Pipeline**: Source videos live in `assets/videos_src/`, build step generates runtime `.video` + optional `.ogg` audio.
 
 ## How to get started
 
@@ -55,6 +56,12 @@ brew install sdl2 sdl2_mixer
 ```
 
 If you enable `movie`, `build.sh` will also build `utils/vnef-video` (requires FFmpeg dev libs).
+To prep videos, you also need a working `ffmpeg` binary in PATH (or pass `--ffmpeg /path/to/ffmpeg`).
+
+Prepare videos (example):
+```bash
+./build.sh --prep-videos demo/assets/videos_src demo/runtime/videos --force --audio --audio-out demo/runtime/video_audio
+```
 
 ## Writing your own story
 
@@ -68,8 +75,11 @@ Project layout (demo-style):
 - `demo/ui.vnef` (textbox, choice UI, transitions)
 - `demo/char.vnef` (per-character name/text colors)
 - `demo/assets/` (images, audio, scripts)
-- `demo/assets/videos/` (video files, `.video` or `.webm`)
-- `demo/runtime/video_audio/` (auto-mapped `.ogg` audio for movies)
+- `demo/assets/videos_src/` (source videos: `.mp4/.webm`, tooling only)
+- `demo/runtime/videos/` (generated `.video` artifacts, do not edit/commit)
+- `demo/runtime/video_audio/` (auto-mapped `.ogg` audio for movies, generated)
+
+Note: If you pass a script path on the command line, the Start menu will launch that script instead of `entry_script`.
 
 Here's what a script looks like:
 ```vnef

@@ -1,0 +1,31 @@
+# Movie Feature Test
+# Uses demo/assets/videos_src/test.mp4 -> demo/runtime/videos/test.video
+
+bg "room.png"
+with fade 200
+say Narrator "Movie test begins."
+
+# Background layer + blur + textbox wait (auto hides, shows on click)
+movie "test.video" layer=bg blur=0.25 wait textbox=wait
+say Narrator "Background movie with blur."
+
+# Foreground box + manual sizing + fit/align
+movie "test.video" layer=fg x=280 y=120 w=720 h=405 fit=contain align=center textbox=hide
+say Narrator "Foreground box (contain) with textbox hidden."
+textbox show
+movie stop
+
+# Loop + pause/resume
+movie "test.video" loop layer=fg x=160 y=90 w=960 h=540 fit=cover align=center
+say Narrator "Looping video. Click to pause."
+movie pause
+say Narrator "Paused. Click to resume."
+movie resume
+say Narrator "Resumed. Click to stop."
+movie stop
+
+# Hold last frame after end
+movie "test.video" hold wait layer=fg x=200 y=140 w=880 h=495 fit=contain align=center
+say Narrator "Hold last frame after end."
+
+end

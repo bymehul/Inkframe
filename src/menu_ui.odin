@@ -459,10 +459,14 @@ menu_start_fresh :: proc(g: ^Game_State) {
     audio_stop_sfx_all(&g.audio)
     audio_apply_settings(&g.audio)
 
-    script_load(&g.script, cfg.entry_script)
+    start_path := g.start_script
+    if start_path == "" {
+        start_path = cfg.entry_script
+    }
+    script_load(&g.script, start_path)
     scene_system_cleanup()
     scene_init()
-    g_scenes.current = scene_load_sync(cfg.entry_script)
+    g_scenes.current = scene_load_sync(start_path)
     character_flush_all()
     g.current_bg = 0
     g.bg_transition.active = false
