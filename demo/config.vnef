@@ -25,13 +25,18 @@ path_music     = "demo/assets/music/"
 path_ambience  = "demo/assets/ambience/"
 path_sfx       = "demo/assets/sfx/"
 path_voice     = "demo/assets/voice/"
-path_videos    = "demo/assets/videos/"
-path_video_audio = "demo/runtime/video_audio/"
+# Source videos (mp4/webm/etc). Used by tooling only.
+path_videos_src = "demo/assets/videos_src/"
+
 path_scripts   = "demo/assets/scripts/"
 path_manifests = "demo/assets/manifests/"
 path_characters = "demo/assets/images/characters/"
 path_saves     = "demo/saves/"
 entry_script   = "demo/assets/scripts/witches_game.vnef"
+
+# Generated .video artifacts (do not edit manually).
+path_videos    = "demo/runtime/videos/"
+path_video_audio = "demo/runtime/video_audio/"
 
 # UI settings are now in ui.vnef
 # (textbox/choice styles, loading screen, text speed, theme colors)
