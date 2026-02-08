@@ -2,6 +2,14 @@
 
 All notable changes to Vnefall will be documented in this file.
 
+## [1.5.4] - 2026-02-08
+### Changed
+- **Movie Blur Removed**: The `blur=` option on `movie` is removed (no placeholder overlay).
+- **Build Hook**: `build.sh --prep-videos` now uses `odin run <file> -file` correctly.
+
+### Fixed
+- **Video Prefetch Cleanup**: Prefetch cache now frees textures/keys safely on shutdown.
+
 ## [1.5.3] - 2026-02-08
 ### Added
 - **Video Source/Runtime Split**: Source videos live in `demo/assets/videos_src/`, generated `.video` assets in `demo/runtime/videos/`.

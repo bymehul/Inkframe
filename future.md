@@ -108,6 +108,14 @@ This update combines a simplified character system, Sthiti-DB persistence, and h
 
 ---
 
+## v1.5.4: Movie Cleanup & Tool Fixes
+
+- [x] **Movie Blur Removed**: `movie blur=` placeholder is removed to avoid confusion/perf cost.
+- [x] **Video Prefetch Shutdown**: Prefetch cache now frees textures/keys safely on shutdown.
+- [x] **Build Hook Fix**: `build.sh --prep-videos` runs `odin run <file> -file` correctly.
+
+---
+
 ## v1.5.5: Reading Flow Quality & Menu Polish
 
 - [ ] **Backlog**: A scrollable history window for reviewing previously read text.

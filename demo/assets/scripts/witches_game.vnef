@@ -11,7 +11,7 @@ say Narrator "The cottage stands quiet, its windows lit by a warm glow."
 bg_blur 0
 
 # Optional intro movie test (add file to demo/assets/videos_src/ and convert to .video)
-movie "witches_intro.video" layer=fg blur=0.35 wait textbox=wait x=320 y=180 w=640 h=360 fit=contain align=center
+movie "witches_intro.video" layer=fg wait textbox=wait x=320 y=180 w=640 h=360 fit=contain align=center
 
 bg "witches/Library 1.png" blur=6
 with dissolve 350

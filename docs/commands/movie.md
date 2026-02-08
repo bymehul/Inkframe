@@ -6,8 +6,8 @@ Plays a video as an on-screen layer (background or foreground).
 ```vnef
 movie "intro.video"
 movie "intro.video" loop
-movie "intro.video" wait textbox=wait blur=0.35 layer=fg audio=off
-movie "logo.webm" x=80 y=60 w=480 h=270 fit=contain align=center
+movie "intro.video" wait textbox=wait layer=fg audio=off
+movie "logo.video" x=80 y=60 w=480 h=270 fit=contain align=center
 
 movie pause
 movie resume
@@ -19,7 +19,6 @@ movie stop
 - `hold`: keep the last frame after playback finishes.
 - `wait`: block script advancement until the player clicks.
 - `layer=bg` or `layer=fg`: draw behind characters (`bg`) or in front of them (`fg`).
-- `blur=<0..1>`: dims the background before drawing the video (placeholder blur).
 - `x=`, `y=`, `w=`, `h=`: draw the movie in a rectangular region (design-space).
 - `fit=stretch|contain|cover`: scaling mode inside the rectangle.
 - `align=center|top|bottom|left|right|topleft|topright|bottomleft|bottomright`: alignment inside the rectangle.

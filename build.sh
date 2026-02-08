@@ -98,7 +98,7 @@ if [ -f ./utils/vnef-video/build/libvnef_video.so ]; then
   cp ./utils/vnef-video/build/libvnef_video.so ./libvnef_video.so
 fi
 odin build src -out:vnefall -debug \
-  -collection:vneui=./vneui \
+  -collection:vneui=./utils/vnef-ui \
   -collection:vnefvideo=./utils/vnef-video/bindings \
   -extra-linker-flags:"-L./utils/vnef-video/build -lvnef_video"
 

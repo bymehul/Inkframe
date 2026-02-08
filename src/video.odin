@@ -15,7 +15,6 @@ Video_Play_Options :: struct {
     loop: bool,
     hold_last: bool,
     wait_for_click: bool,
-    blur_alpha: f32,
     layer: Video_Layer,
     x: f32,
     y: f32,
@@ -34,7 +33,6 @@ Video_State :: struct {
     hold_last: bool,
     wait_for_click: bool,
     layer: Video_Layer,
-    blur_alpha: f32,
     x: f32,
     y: f32,
     w: f32,
@@ -131,8 +129,8 @@ video_prefetch_scene :: proc(m: ^Manifest) {
 video_prefetch_take :: proc(path: string) -> (u32, bool) {
     if video_prefetch_cache == nil do return 0, false
     if entry, ok := video_prefetch_cache[path]; ok {
-        delete(entry.key)
         delete_key(&video_prefetch_cache, entry.key)
+        delete(entry.key)
         return entry.tex, true
     }
     return 0, false
@@ -144,9 +142,12 @@ video_prefetch_release_for_manifest :: proc(m: ^Manifest, keep: ^Manifest = nil)
         if keep != nil && contains_string_video(keep.videos[:], v) do continue
         full := video_full_path(v)
         if entry, ok := video_prefetch_cache[full]; ok {
-            gl.DeleteTextures(1, &entry.tex)
-            delete(entry.key)
+            if entry.tex != 0 {
+                tex := entry.tex
+                gl.DeleteTextures(1, &tex)
+            }
             delete_key(&video_prefetch_cache, entry.key)
+            delete(entry.key)
         }
         delete(full)
     }
@@ -285,7 +286,6 @@ video_play :: proc(v: ^Video_State, path: string, opts: Video_Play_Options) -> b
     v.hold_last = opts.hold_last
     v.wait_for_click = opts.wait_for_click
     v.layer = opts.layer
-    v.blur_alpha = opts.blur_alpha
     v.x = opts.x
     v.y = opts.y
     v.w = opts.w
@@ -427,13 +427,6 @@ video_apply_fit_align :: proc(v: ^Video_State) -> (f32, f32, f32, f32) {
 
 video_draw_layer :: proc(v: ^Video_State, r: ^Renderer) {
     if !v.active do return
-    if v.blur_alpha > 0 {
-        a := v.blur_alpha
-        if a < 0 do a = 0
-        if a > 1 do a = 1
-        // Placeholder blur: dim overlay until a real blur shader exists.
-        renderer_draw_rect(r, 0, 0, r.width, r.height, {0, 0, 0, a})
-    }
     if v.tex != 0 {
         if v.use_rect && v.w > 0 && v.h > 0 {
             px, py, pw, ph := video_apply_fit_align(v)
@@ -446,4 +439,17 @@ video_draw_layer :: proc(v: ^Video_State, r: ^Renderer) {
 
 video_cleanup :: proc(v: ^Video_State) {
     video_stop(v)
+    if video_prefetch_cache != nil {
+        for _, entry in video_prefetch_cache {
+            if entry.tex != 0 {
+                tex := entry.tex
+                gl.DeleteTextures(1, &tex)
+            }
+            if entry.key != "" {
+                delete(entry.key)
+            }
+        }
+        delete(video_prefetch_cache)
+        video_prefetch_cache = nil
+    }
 }

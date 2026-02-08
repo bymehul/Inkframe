@@ -266,7 +266,7 @@ parse_line :: proc(line: string) -> (cmd: Command) {
         return
     }
 
-    // movie "intro.video" [loop] [hold] [wait] [layer=bg|fg] [blur=0.4] [textbox=hide|wait]
+    // movie "intro.video" [loop] [hold] [wait] [layer=bg|fg] [textbox=hide|wait]
     if strings.has_prefix(line, "movie ") {
         rest := strings.trim_space(line[6:])
         if rest == "stop" {
@@ -736,7 +736,7 @@ script_execute :: proc(s: ^Script, state: ^Game_State) {
         s.ip += 1
 
     case .Movie:
-        // Options: loop, hold, wait, layer=bg|fg, blur=0.4, textbox=hide|wait
+        // Options: loop, hold, wait, layer=bg|fg, textbox=hide|wait
         loop := false
         hold := false
         wait := false
@@ -749,7 +749,6 @@ script_execute :: proc(s: ^Script, state: ^Game_State) {
         fit := ""
         align := ""
         layer := Video_Layer.Background
-        blur: f32 = 0
         textbox_hide := false
         textbox_wait := false
         
@@ -792,10 +791,6 @@ script_execute :: proc(s: ^Script, state: ^Game_State) {
                 } else {
                     layer = .Background
                 }
-                continue
-            }
-            if strings.has_prefix(lower, "blur=") {
-                if v, ok := strconv.parse_f32(strings.trim_space(lower[5:])); ok do blur = v
                 continue
             }
             if strings.has_prefix(lower, "x=") {
@@ -923,7 +918,6 @@ script_execute :: proc(s: ^Script, state: ^Game_State) {
             loop = loop,
             hold_last = hold,
             wait_for_click = wait,
-            blur_alpha = blur,
             layer = layer,
             x = rect_x,
             y = rect_y,

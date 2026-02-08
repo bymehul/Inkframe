@@ -14,7 +14,7 @@ Vnefall is a simple, no-nonsense visual novel engine. It's built in Odin using S
 - **Character Stacking**: Responsive scaling and Z-index control for sprites.
 - **Cinematic Transitions**: `with fade|wipe|slide|dissolve|zoom|blur|flash|shake|none` for backgrounds + character fades/slides.
 - **Text Effects**: Inline `{color=...}` tags, `{shake}`, and per-line `[speed=...]` overrides.
-- **Movie Playback**: `movie` command for `.video` cutscenes with optional blur and textbox control.
+- **Movie Playback**: `movie` command for `.video` cutscenes with textbox control.
 - **Video Pipeline**: Source videos live in `assets/videos_src/`, build step generates runtime `.video` + optional `.ogg` audio.
 
 ## How to get started
